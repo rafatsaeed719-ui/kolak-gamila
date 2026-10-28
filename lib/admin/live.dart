@@ -21,7 +21,7 @@ class Live extends ChangeNotifier {
   Map<String, double> costs = {};
 
   double costOf(String productId) => costs[productId] ?? 0;
-  Settings settings = const Settings();
+  StoreSettings settings = const StoreSettings();
   bool ready = false;
   String error = '';
   final _subs = <StreamSubscription>[];

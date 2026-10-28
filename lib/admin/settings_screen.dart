@@ -26,7 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 8),
         numField(threshold, 'المبلغ اللي بيدّي نقطة (ج)', onChanged: (_) => setState(() {})),
         const SizedBox(height: 6),
-        Text(Settings(pointThreshold: toD(threshold.text) <= 0 ? 200 : toD(threshold.text)).rulesText,
+        Text(StoreSettings(pointThreshold: toD(threshold.text) <= 0 ? 200 : toD(threshold.text)).rulesText,
             style: const TextStyle(color: kMuted)),
         const SizedBox(height: 20),
         const Text('بيانات المحل في الفواتير',
@@ -46,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => busy = true);
                   final nav = Navigator.of(context);
                   await settingsRef.set(
-                      Settings(
+                      StoreSettings(
                         pointThreshold: toD(threshold.text) <= 0 ? 200 : toD(threshold.text),
                         storePhone: phone.text.trim(),
                         storeAddress: address.text.trim(),

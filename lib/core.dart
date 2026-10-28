@@ -133,13 +133,13 @@ String fmtDate(dynamic ts, {bool time = false}) {
 
 // ======================== الإعدادات ========================
 
-class Settings {
+class StoreSettings {
   final double pointThreshold; // أي عملية أكبر من (أو تساوي في الدفع) المبلغ ده = نقطة
   final String storePhone;
   final String storeAddress;
-  const Settings({this.pointThreshold = 200, this.storePhone = '', this.storeAddress = ''});
+  const StoreSettings({this.pointThreshold = 200, this.storePhone = '', this.storeAddress = ''});
 
-  factory Settings.fromMap(Map<String, dynamic>? m) => Settings(
+  factory StoreSettings.fromMap(Map<String, dynamic>? m) => StoreSettings(
         pointThreshold: toD(m?['pointThreshold'] ?? 200) <= 0 ? 200 : toD(m?['pointThreshold'] ?? 200),
         storePhone: (m?['storePhone'] ?? '').toString(),
         storeAddress: (m?['storeAddress'] ?? '').toString(),
@@ -158,7 +158,7 @@ class Settings {
 DocumentReference<Map<String, dynamic>> get settingsRef => db.collection('meta').doc('settings');
 DocumentReference<Map<String, dynamic>> get countersRef => db.collection('meta').doc('counters');
 
-Stream<Settings> settingsStream() => settingsRef.snapshots().map((s) => Settings.fromMap(s.data()));
+Stream<StoreSettings> settingsStream() => settingsRef.snapshots().map((s) => StoreSettings.fromMap(s.data()));
 
 // ======================== حساب العميل ========================
 
@@ -191,7 +191,7 @@ class Entry {
 
 class Account {
   final List<Entry> entries;
-  final Settings settings;
+  final StoreSettings settings;
   Account(this.entries, this.settings);
 
   double get debit => entries.fold(0.0, (a, e) => a + e.debit);

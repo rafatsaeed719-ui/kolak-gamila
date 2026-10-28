@@ -39,7 +39,7 @@ pw.Widget _t(String s,
         textAlign: align,
         style: pw.TextStyle(font: bold ? _bold : _regular, fontSize: size, color: color));
 
-pw.Widget _header(String title, String sub, Settings st) {
+pw.Widget _header(String title, String sub, StoreSettings st) {
   return pw.Container(
     padding: const pw.EdgeInsets.all(14),
     decoration: pw.BoxDecoration(color: _blush, borderRadius: pw.BorderRadius.circular(10)),
@@ -75,7 +75,7 @@ pw.Widget _row(String a, String b, {bool bold = false, PdfColor color = _ink}) =
       ]),
     );
 
-Future<Uint8List> buildInvoice(Map<String, dynamic> customer, Entry e, Settings st, {double? balance}) async {
+Future<Uint8List> buildInvoice(Map<String, dynamic> customer, Entry e, StoreSettings st, {double? balance}) async {
   await _load();
   final doc = pw.Document();
   final items = e.items;
@@ -132,7 +132,7 @@ Future<Uint8List> buildInvoice(Map<String, dynamic> customer, Entry e, Settings 
   return doc.save();
 }
 
-Future<Uint8List> buildStatement(Map<String, dynamic> customer, Account acc, Settings st) async {
+Future<Uint8List> buildStatement(Map<String, dynamic> customer, Account acc, StoreSettings st) async {
   await _load();
   final doc = pw.Document();
   final entries = [...acc.entries]..sort((a, b) => a.date.compareTo(b.date));
@@ -197,7 +197,7 @@ Future<Uint8List> buildStatement(Map<String, dynamic> customer, Account acc, Set
 
 Future<void> shareInvoicePdf(BuildContext context, Map<String, dynamic> customer, Entry e) async {
   try {
-    final st = Settings.fromMap((await settingsRef.get()).data());
+    final st = StoreSettings.fromMap((await settingsRef.get()).data());
     final bytes = await buildInvoice(customer, e, st);
     await Printing.sharePdf(bytes: bytes, filename: 'فاتورة-${e.invoiceNo}-${customer['name'] ?? ''}.pdf');
   } catch (err) {

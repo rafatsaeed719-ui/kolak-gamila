@@ -26,7 +26,7 @@ void main() {
       'credit': 300,
       'note': 'هتدفع الباقي أول الشهر',
     });
-    const st = Settings(storePhone: '01000000000', storeAddress: 'شارع الجمهورية');
+    const st = StoreSettings(storePhone: '01000000000', storeAddress: 'شارع الجمهورية');
     File('invoice-sample.pdf').writeAsBytesSync(await buildInvoice(customer, sale, st, balance: 545));
     final pay = Entry('p1', {'kind': 'pay', 'date': now.add(const Duration(days: 3)), 'debit': 0, 'credit': 250});
     final old = Entry('a1', {'kind': 'adjust', 'date': now.subtract(const Duration(days: 20)), 'debit': 400, 'credit': 0, 'note': 'مديونية سابقة'});

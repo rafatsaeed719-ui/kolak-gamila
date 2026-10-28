@@ -98,7 +98,7 @@ class Mine extends ChangeNotifier {
   List<Doc> orders = [];
   List<Entry> entries = [];
   Doc? ledger;
-  Settings settings = const Settings();
+  StoreSettings settings = const StoreSettings();
 
   Account get account => Account(entries, settings);
 
