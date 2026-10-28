@@ -1,0 +1,91 @@
+name: Build Kolak Gamila APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+
+      - name: Generate Android project
+        run: |
+          flutter create --org com.kolak --project-name gamila --platforms android .
+          rm -rf test
+          python3 tool/patch_android.py
+
+      - name: Download Arabic font for PDF
+        run: |
+          mkdir -p assets/fonts
+          for w in Regular Bold; do
+            curl -fsSL -o assets/fonts/Amiri-$w.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-$w.ttf"
+          done
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: App icon
+        run: dart run flutter_launcher_icons
+
+      - name: Analyze
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1
+          code=$?
+          grep -E "error •|warning •" analyze.log | head -80
+          exit $code
+
+      - name: Sample PDFs
+        run: flutter test tool/pdf_preview_test.dart > pdf-test.log 2>&1 || (tail -60 pdf-test.log; true)
+
+      - name: Build APK
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk KolakGamila.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KolakGamila-apk
+          path: '*.apk'
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: كلك جميلة ${{ github.run_number }}
+          files: |
+            KolakGamila.apk
+            invoice-sample.pdf
+            statement-sample.pdf
+            pdf-test.log
+            analyze.log
+          make_latest: true
+
+      - name: Publish error log
+        if: failure()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: log-${{ github.run_number }}
+          name: build log ${{ github.run_number }}
+          prerelease: true
+          make_latest: false
+          files: |
+            analyze.log
+            pdf-test.log

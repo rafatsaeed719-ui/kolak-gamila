@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // صاحب المحل
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'rafatsaeed719@gmail.com';
+    }
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function active() { return hasProfile() && me().get('disabled', false) != true; }
+    // رقم تليفون العميل اللي داخل
+    function myPhone() { return me().phone; }
+    function mine(data) {
+      return active() && data.get('phone', '') != '' && data.phone == myPhone();
+    }
+
+    // ===== حسابات الدخول =====
+    match /users/{userId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      // العميل بيسجل نفسه: رقمه لازم يطابق الإيميل الداخلي بتاع حسابه
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == userId
+        && request.resource.data.role == 'customer'
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 10
+        && request.auth.token.email == request.resource.data.phone + '@kolak-gamila.app'
+        && !('disabled' in request.resource.data));
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['phone', 'role', 'disabled', 'password', 'createdByAdmin']));
+      allow delete: if isAdmin();
+    }
+
+    // ===== دفتر العملاء: العميل يشوف ملفه بس (بنفس رقمه) =====
+    match /customers/{id} {
+      allow read: if isAdmin() || mine(resource.data);
+      allow write: if isAdmin();
+    }
+
+    // ===== الحركات (فواتير ودفعات): العميل يشوف حركاته بس =====
+    match /entries/{id} {
+      allow read: if isAdmin() || mine(resource.data);
+      allow write: if isAdmin();
+    }
+
+    // ===== المنتجات والعروض: كل اللي مسجّل يشوف، والمدير بس يكتب =====
+    match /products/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /offers/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    // سعر الشرا للمدير بس
+    match /productCosts/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // ===== الطلبات =====
+    match /orders/{id} {
+      allow read: if isAdmin() || (active() && resource.data.uid == request.auth.uid);
+      allow create: if active()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.phone == myPhone()
+        && request.resource.data.status == 'new';
+      // العميل يقدر يلغي طلبه وهو لسه جديد بس
+      allow update: if isAdmin() || (active() && resource.data.uid == request.auth.uid
+        && resource.data.status == 'new'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if isAdmin();
+    }
+
+    // ===== الإعدادات والعدّادات =====
+    match /meta/{doc} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
