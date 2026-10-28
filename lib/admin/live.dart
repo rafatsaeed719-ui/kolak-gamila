@@ -65,25 +65,33 @@ class Live extends ChangeNotifier {
       offers = s.docs;
       _mark('f');
     }, onError: _err));
-    _subs.add(db.collection('users').snapshots().listen((s) {
-      users = s.docs;
-      _mark('u');
-    }, onError: _err));
-    _subs.add(db.collection('productCosts').snapshots().listen((s) {
-      costs = {for (final d in s.docs) d.id: toD(d.data()['cost'])};
-      notifyListeners();
-    }, onError: _err));
+    // حسابات الدخول وأسعار الشرا لصاحب المحل بس
+    if (Me.owner) {
+      _subs.add(db.collection('users').snapshots().listen((s) {
+        users = s.docs;
+        _mark('u');
+      }, onError: _err));
+      _subs.add(db.collection('productCosts').snapshots().listen((s) {
+        costs = {for (final d in s.docs) d.id: toD(d.data()['cost'])};
+        notifyListeners();
+      }, onError: _err));
+    }
     _subs.add(settingsStream().listen((s) {
       settings = s;
       notifyListeners();
     }, onError: _err));
   }
 
+  List<Doc> get customerAccounts => users.where((u) => u.data()['role'] != 'staff').toList();
+  List<Doc> get staff => users.where((u) => u.data()['role'] == 'staff').toList();
+
   void stop() {
     for (final s in _subs) {
       s.cancel();
     }
     _subs.clear();
+    users = [];
+    costs = {};
     _loaded.clear();
     ready = false;
   }
@@ -123,6 +131,7 @@ class Live extends ChangeNotifier {
     final p = normPhone(phone);
     if (p.isEmpty) return null;
     for (final u in users) {
+      if (u.data()['role'] == 'staff') continue;
       if (normPhone((u.data()['phone'] ?? '').toString()) == p) return u;
     }
     return null;

@@ -68,7 +68,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
         final total = rows.fold(0.0, (s, r) => s + (r.value.balance > 0 ? r.value.balance : 0));
         return Scaffold(
           appBar: AppBar(title: const Text('العملاء')),
-          floatingActionButton: FloatingActionButton.extended(
+          floatingActionButton: !Me.can('customers')
+              ? null
+              : FloatingActionButton.extended(
             onPressed: () => openCustomerForm(context),
             icon: const Icon(Icons.person_add_alt),
             label: const Text('عميل جديد'),
@@ -103,7 +105,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
               child: Row(children: [
                 Text('${rows.length} عميل', style: const TextStyle(color: kMuted)),
                 const Spacer(),
-                Text('عليهم ${money(total)}',
+                if (Me.can('reports'))
+                  Text('عليهم ${money(total)}',
                     style: const TextStyle(color: kOwe, fontWeight: FontWeight.bold)),
               ]),
             ),
@@ -308,7 +311,7 @@ class _CustomerFormState extends State<CustomerForm> {
           style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           child: const Text('حفظ'),
         ),
-        if (!isNew) ...[
+        if (!isNew && Me.can('edit')) ...[
           const SizedBox(height: 12),
           TextButton.icon(
             style: TextButton.styleFrom(foregroundColor: kOwe),
@@ -362,6 +365,7 @@ class CustomerDetail extends StatelessWidget {
           appBar: AppBar(
             title: Text((m['name'] ?? '').toString()),
             actions: [
+              if (Me.can('customers'))
               IconButton(
                 tooltip: 'تعديل البيانات والكود',
                 icon: const Icon(Icons.edit_outlined),
@@ -382,7 +386,7 @@ class CustomerDetail extends StatelessWidget {
                     const Spacer(),
                     if (appUser != null)
                       const Pill('عنده التطبيق', kPaid)
-                    else if (phone.isNotEmpty)
+                    else if (phone.isNotEmpty && Me.owner)
                       TextButton(
                         onPressed: () => openNewAccount(context, phone: phone, name: (m['name'] ?? '').toString()),
                         child: const Text('اعمله حساب'),
@@ -411,7 +415,7 @@ class CustomerDetail extends StatelessWidget {
                       Text('خصومات: ${money(acc.discounts)}', style: const TextStyle(color: kMuted)),
                     ],
                     const Spacer(),
-                    if (acc.points > 0)
+                    if (acc.points > 0 && Me.can('edit'))
                       TextButton(
                           onPressed: () => _redeem(context, c, acc), child: const Text('استبدال نقط')),
                   ]),
@@ -430,18 +434,21 @@ class CustomerDetail extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Wrap(spacing: 8, runSpacing: 8, children: [
+                if (Me.can('sell'))
                 FilledButton.icon(
                   onPressed: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => SaleScreen(customerId: customerId))),
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('بيع / مديونية'),
                 ),
+                if (Me.can('sell'))
                 FilledButton.tonalIcon(
                   onPressed: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => PaymentScreen(customerId: customerId))),
                   icon: const Icon(Icons.payments_outlined),
                   label: const Text('تسجيل دفعة'),
                 ),
+                if (Me.can('edit'))
                 OutlinedButton.icon(
                   onPressed: () => adjustSheet(context, c, acc),
                   icon: const Icon(Icons.tune),
@@ -724,6 +731,8 @@ class EntryCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(e.note),
           ],
+          if (admin && Me.owner && (e.m['by'] ?? '').toString().isNotEmpty && e.m['by'] != 'صاحب المحل')
+            Text('سجّلها: ${e.m['by']}', style: const TextStyle(fontSize: 12, color: kMuted)),
           if (e.photos.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -747,7 +756,7 @@ class EntryCard extends StatelessWidget {
                   icon: const Icon(Icons.receipt_long, size: 18),
                   label: const Text('الفاتورة'),
                 ),
-              if (admin && e.kind == 'sale')
+              if (admin && e.kind == 'sale' && Me.can('edit'))
                 TextButton(
                   onPressed: () => Navigator.push(
                       context,
@@ -755,7 +764,7 @@ class EntryCard extends StatelessWidget {
                           builder: (_) => SaleScreen(customerId: e.m['customerId'], old: e))),
                   child: const Text('تعديل'),
                 ),
-              if (admin && e.kind == 'adjust')
+              if (admin && e.kind == 'adjust' && Me.can('edit'))
                 TextButton(
                   onPressed: () {
                     final c = Live.I.customer(e.m['customerId']);
@@ -763,7 +772,7 @@ class EntryCard extends StatelessWidget {
                   },
                   child: const Text('تعديل'),
                 ),
-              if (admin)
+              if (admin && Me.can('edit'))
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: kOwe),
                   onPressed: () async {

@@ -5,24 +5,45 @@ service cloud.firestore {
     function isAdmin() { return signedIn() && request.auth.token.email == 'rafatsaeed719@gmail.com'; }
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function active() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && me().get('disabled', false) != true; }
+    function staff() { return active() && me().get('role', '') == 'staff'; }
+    function can(p) { return isAdmin() || (staff() && p in me().get('perms', [])); }
     function mine(d) { return active() && d.get('phone', '') != '' && d.phone == me().phone; }
+    function onlyStock() { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']); }
+    function onlyItems() { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items']); }
 
     match /users/{u} {
       allow read: if isAdmin() || (signedIn() && request.auth.uid == u);
       allow create: if isAdmin() || (signedIn() && request.auth.uid == u && request.resource.data.role == 'customer' && request.resource.data.phone is string && request.auth.token.email == request.resource.data.phone + '@kolak-gamila.app' && request.resource.data.get('disabled', false) == false);
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == u && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone', 'role', 'disabled', 'password', 'createdByAdmin']));
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == u && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone', 'role', 'perms', 'disabled', 'password', 'createdByAdmin']));
       allow delete: if isAdmin();
     }
-    match /customers/{id} { allow read: if isAdmin() || mine(resource.data); allow write: if isAdmin(); }
-    match /entries/{id} { allow read: if isAdmin() || mine(resource.data); allow write: if isAdmin(); }
-    match /products/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
-    match /offers/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /customers/{id} {
+      allow read: if isAdmin() || staff() || mine(resource.data);
+      allow create: if can('customers') || can('sell') || can('orders');
+      allow update: if can('customers');
+      allow delete: if can('edit');
+    }
+    match /entries/{id} {
+      allow read: if isAdmin() || staff() || mine(resource.data);
+      allow create: if can('sell') || can('orders') || can('edit');
+      allow update: if can('edit') || (can('sell') && onlyItems()) || (can('customers') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone']));
+      allow delete: if can('edit');
+    }
+    match /products/{id} {
+      allow read: if signedIn();
+      allow create, delete: if can('products');
+      allow update: if can('products') || ((can('sell') || can('orders') || can('edit')) && onlyStock());
+    }
+    match /offers/{id} { allow read: if signedIn(); allow write: if can('offers'); }
     match /productCosts/{id} { allow read, write: if isAdmin(); }
-    match /meta/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /meta/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || (id == 'counters' && (can('sell') || can('orders') || can('edit')));
+    }
     match /orders/{id} {
-      allow read: if isAdmin() || (active() && resource.data.uid == request.auth.uid);
+      allow read: if isAdmin() || staff() || (active() && resource.data.uid == request.auth.uid);
       allow create: if active() && request.resource.data.uid == request.auth.uid && request.resource.data.phone == me().phone && request.resource.data.status == 'new';
-      allow update: if isAdmin() || (active() && resource.data.uid == request.auth.uid && resource.data.status == 'new' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow update: if can('orders') || (active() && resource.data.uid == request.auth.uid && resource.data.status == 'new' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isAdmin();
     }
   }

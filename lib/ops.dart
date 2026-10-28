@@ -121,6 +121,7 @@ Future<String> saveSale({
     if (orderId != null) 'orderId': orderId,
     if (old != null && old.m['orderId'] != null) 'orderId': old.m['orderId'],
     'updatedAt': FieldValue.serverTimestamp(),
+    'by': Me.name,
   });
   // المخزن: نرجّع الكميات القديمة ونخصم الجديدة
   final delta = <String, double>{};
@@ -194,6 +195,7 @@ Future<void> savePayment({
     'note': note,
     'photos': <String>[],
     'updatedAt': FieldValue.serverTimestamp(),
+    'by': Me.name,
   });
   await batch.commit();
 }
@@ -250,6 +252,7 @@ Future<void> saveAdjust({
     'note': note,
     'photos': <String>[],
     'updatedAt': FieldValue.serverTimestamp(),
+    'by': Me.name,
   });
 }
 
@@ -271,6 +274,7 @@ Future<void> saveRedeem({
     'note': note,
     'photos': <String>[],
     'updatedAt': FieldValue.serverTimestamp(),
+    'by': Me.name,
   });
 }
 

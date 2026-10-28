@@ -23,6 +23,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => error = '');
     final input = phone.text.trim();
     final isEmail = input.contains('@');
+    if (isEmail && input.toLowerCase() != kAdminEmail.toLowerCase()) {
+      setState(() => error = 'الدخول بالإيميل لصاحب المحل بس، ادخل برقم موبايلك');
+      return;
+    }
     if (!isEmail && !validPhone(input)) {
       setState(() => error = 'اكتب رقم موبايل صحيح زي 01012345678');
       return;

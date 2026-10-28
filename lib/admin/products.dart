@@ -36,20 +36,24 @@ class _ProductsScreenState extends State<ProductsScreen> {
         }
         return Scaffold(
           appBar: AppBar(title: const Text('البضاعة والمنتجات')),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductForm())),
-            icon: const Icon(Icons.add),
-            label: const Text('منتج جديد'),
-          ),
+          floatingActionButton: !Me.can('products')
+              ? null
+              : FloatingActionButton.extended(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductForm())),
+                  icon: const Icon(Icons.add),
+                  label: const Text('منتج جديد'),
+                ),
           body: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: Row(children: [
-                Expanded(child: StatBox('رصيد البضاعة (شرا)', money(cost), icon: Icons.inventory_2_outlined)),
-                const SizedBox(width: 8),
-                Expanded(child: StatBox('رصيد البضاعة (بيع)', money(sell), icon: Icons.sell_outlined)),
-              ]),
-            ),
+            if (Me.can('reports'))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: Row(children: [
+                  if (Me.owner)
+                    Expanded(child: StatBox('رصيد البضاعة (شرا)', money(cost), icon: Icons.inventory_2_outlined)),
+                  if (Me.owner) const SizedBox(width: 8),
+                  Expanded(child: StatBox('رصيد البضاعة (بيع)', money(sell), icon: Icons.sell_outlined)),
+                ]),
+              ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: TextField(
@@ -97,7 +101,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: low ? kOwe : kPlum)),
                 Text('في المحل', style: TextStyle(fontSize: 11, color: low ? kOwe : kMuted)),
               ]),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductForm(p: p))),
+        onTap: !Me.can('products')
+            ? null
+            : () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductForm(p: p))),
       ),
     );
   }
@@ -182,7 +188,7 @@ class _ProductFormState extends State<ProductForm> {
         await ref.update(data);
       }
       // سعر الشرا في مكان منفصل عشان العملاء مايشوفوهوش
-      await db.collection('productCosts').doc(ref.id).set({'cost': toD(cost.text)});
+      if (Me.owner) await db.collection('productCosts').doc(ref.id).set({'cost': toD(cost.text)});
       if (!mounted) return;
       Navigator.pop(context);
       toast(context, 'اتحفظ المنتج');
@@ -224,8 +230,8 @@ class _ProductFormState extends State<ProductForm> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: numField(price, 'سعر البيع')),
-          const SizedBox(width: 10),
-          Expanded(child: numField(cost, 'سعر الشرا (ليك بس)')),
+          if (Me.owner) const SizedBox(width: 10),
+          if (Me.owner) Expanded(child: numField(cost, 'سعر الشرا (ليك بس)')),
         ]),
         const SizedBox(height: 12),
         Row(children: [

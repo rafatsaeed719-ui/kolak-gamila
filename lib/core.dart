@@ -32,8 +32,28 @@ final auth = FirebaseAuth.instance;
 
 String get uid => auth.currentUser?.uid ?? '';
 
+/// صاحب المحل (الدخول بالإيميل ده بس)
 bool get isAdmin =>
     (auth.currentUser?.email ?? '').toLowerCase() == kAdminEmail.toLowerCase();
+
+/// صلاحيات اللي داخل لوحة المحل: صاحب المحل كل حاجة، والموظف حسب صلاحياته
+class Me {
+  static bool owner = false;
+  static String name = '';
+  static Set<String> perms = {};
+  static bool can(String p) => owner || perms.contains(p);
+}
+
+const Map<String, String> kPerms = {
+  'sell': 'بيع وتسجيل دفعات',
+  'customers': 'إضافة وتعديل بيانات العملاء',
+  'orders': 'طلبات العملاء',
+  'products': 'تعديل المنتجات والمخزن',
+  'offers': 'العروض',
+  'edit': 'تعديل وحذف الحركات وتعديل الحسابات',
+  'reports': 'يشوف الإجماليات (الفلوس اللي برّه ورصيد البضاعة)',
+};
+const List<String> kDefaultStaffPerms = ['sell', 'customers', 'orders'];
 
 // ======================== التليفون ========================
 
@@ -316,7 +336,8 @@ Future<FirebaseAuth> helperAuth() async {
 
 String randomPassword() => (100000 + Random.secure().nextInt(900000)).toString();
 
-Future<String> createAccount(String phone, String name, String password) async {
+Future<String> createAccount(String phone, String name, String password,
+    {String role = 'customer', List<String> perms = const []}) async {
   final helper = await helperAuth();
   final cred =
       await helper.createUserWithEmailAndPassword(email: phoneToEmail(phone), password: password);
@@ -326,7 +347,8 @@ Future<String> createAccount(String phone, String name, String password) async {
     'phone': normPhone(phone),
     'name': name,
     'password': password,
-    'role': 'customer',
+    'role': role,
+    if (role == 'staff') 'perms': perms,
     'createdByAdmin': true,
     'createdAt': FieldValue.serverTimestamp(),
   });

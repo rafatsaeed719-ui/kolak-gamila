@@ -93,7 +93,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       listenable: Live.I,
       builder: (context, _) {
         final query = q.trim().toLowerCase();
-        final list = Live.I.users.where((u) {
+        final list = Live.I.customerAccounts.where((u) {
           final m = u.data();
           return query.isEmpty ||
               (m['name'] ?? '').toString().toLowerCase().contains(query) ||
@@ -102,7 +102,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
           ..sort((a, b) => (tsToDate(b.data()['createdAt']) ?? DateTime(2000))
               .compareTo(tsToDate(a.data()['createdAt']) ?? DateTime(2000)));
         return Scaffold(
-          appBar: AppBar(title: Text('حسابات التطبيق (${Live.I.users.length})')),
+          appBar: AppBar(title: Text('حسابات العملاء (${Live.I.customerAccounts.length})')),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => openNewAccount(context),
             icon: const Icon(Icons.person_add_alt),

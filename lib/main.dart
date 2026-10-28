@@ -74,16 +74,38 @@ class AuthGate extends StatelessWidget {
         }
         final user = snap.data;
         if (user == null) return const LoginScreen();
-        if (isAdmin) return const AdminHome();
-        return CustomerGate(key: ValueKey(user.uid));
+        if (isAdmin) {
+          Me.owner = true;
+          Me.name = 'صاحب المحل';
+          Me.perms = kPerms.keys.toSet();
+          return const AdminHome(key: ValueKey('owner'));
+        }
+        // الدخول بالإيميل لصاحب المحل بس
+        if (!(user.email ?? '').endsWith('@$kUserDomain')) return const _NotAllowed();
+        return UserGate(key: ValueKey(user.uid));
       },
     );
   }
 }
 
-/// العميل: لازم يكون ليه ملف ومش موقوف
-class CustomerGate extends StatelessWidget {
-  const CustomerGate({super.key});
+class _NotAllowed extends StatelessWidget {
+  const _NotAllowed();
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: const EmptyView('الدخول بالإيميل لصاحب المحل بس',
+            text: 'العملاء والموظفين بيدخلوا برقم الموبايل.', icon: Icons.lock_outline),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton(onPressed: () => auth.signOut(), child: const Text('رجوع')),
+          ),
+        ),
+      );
+}
+
+/// اللي داخل برقم موبايل: موظف ولا عميل
+class UserGate extends StatelessWidget {
+  const UserGate({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +117,7 @@ class CustomerGate extends StatelessWidget {
         if (me == null) return const CompleteProfile();
         if (me['disabled'] == true) {
           return Scaffold(
-            body: EmptyView('الحساب ده موقوف',
+            body: const EmptyView('الحساب ده موقوف',
                 text: 'كلّم المحل عشان يفعّله تاني.', icon: Icons.lock_outline),
             bottomNavigationBar: SafeArea(
               child: Padding(
@@ -104,6 +126,12 @@ class CustomerGate extends StatelessWidget {
               ),
             ),
           );
+        }
+        if (me['role'] == 'staff') {
+          Me.owner = false;
+          Me.name = (me['name'] ?? '').toString();
+          Me.perms = ((me['perms'] as List?) ?? []).map((e) => e.toString()).toSet();
+          return const AdminHome(key: ValueKey('staff'));
         }
         return CustomerHome(me: me);
       },

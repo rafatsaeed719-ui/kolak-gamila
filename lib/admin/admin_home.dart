@@ -8,6 +8,7 @@ import 'offers.dart';
 import 'orders.dart';
 import 'products.dart';
 import 'settings_screen.dart';
+import 'staff.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -16,7 +17,7 @@ class AdminHome extends StatefulWidget {
 }
 
 class _AdminHomeState extends State<AdminHome> {
-  int tab = 0;
+  String tab = '';
 
   @override
   void initState() {
@@ -45,22 +46,28 @@ class _AdminHomeState extends State<AdminHome> {
           );
         }
         if (!live.ready) return const Scaffold(body: Loading());
-        final pages = [
-          Dashboard(onGo: (i) => setState(() => tab = i)),
-          const CustomersScreen(),
-          const ProductsScreen(),
-          const OrdersScreen(),
-          const MoreScreen(),
-        ];
-        return Scaffold(
-          body: IndexedStack(index: tab, children: pages),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: tab,
-            onDestinationSelected: (i) => setState(() => tab = i),
-            destinations: [
-              const NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'الرئيسية'),
-              const NavigationDestination(icon: Icon(Icons.people_outline), label: 'العملاء'),
-              const NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'البضاعة'),
+        // التبويبات حسب صلاحيات اللي داخل
+        final tabs = <(String, Widget, NavigationDestination)>[
+          if (Me.can('reports'))
+            (
+              'home',
+              Dashboard(onGo: (k) => setState(() => tab = k)),
+              const NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'الرئيسية')
+            ),
+          (
+            'customers',
+            const CustomersScreen(),
+            const NavigationDestination(icon: Icon(Icons.people_outline), label: 'العملاء')
+          ),
+          (
+            'products',
+            const ProductsScreen(),
+            const NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'البضاعة')
+          ),
+          if (Me.can('orders'))
+            (
+              'orders',
+              const OrdersScreen(),
               NavigationDestination(
                 icon: Badge(
                   isLabelVisible: live.newOrders > 0,
@@ -68,9 +75,22 @@ class _AdminHomeState extends State<AdminHome> {
                   child: const Icon(Icons.shopping_bag_outlined),
                 ),
                 label: 'الطلبات',
-              ),
-              const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'المزيد'),
-            ],
+              )
+            ),
+          (
+            'more',
+            const MoreScreen(),
+            const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'المزيد')
+          ),
+        ];
+        var index = tabs.indexWhere((t) => t.$1 == tab);
+        if (index < 0) index = 0;
+        return Scaffold(
+          body: IndexedStack(index: index, children: tabs.map((t) => t.$2).toList()),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (i) => setState(() => tab = tabs[i].$1),
+            destinations: tabs.map((t) => t.$3).toList(),
           ),
         );
       },
@@ -79,7 +99,7 @@ class _AdminHomeState extends State<AdminHome> {
 }
 
 class Dashboard extends StatelessWidget {
-  final ValueChanged<int> onGo;
+  final ValueChanged<String> onGo;
   const Dashboard({super.key, required this.onGo});
 
   @override
@@ -131,21 +151,22 @@ class Dashboard extends StatelessWidget {
         const SectionTitle('ليك عند العملاء'),
         _grid([
           StatBox('إجمالي الفلوس اللي برّه', money(outside),
-              color: kOwe, icon: Icons.account_balance_wallet_outlined, onTap: () => onGo(1)),
+              color: kOwe, icon: Icons.account_balance_wallet_outlined, onTap: () => onGo('customers')),
           StatBox('عملاء عليهم فلوس', '$debtors',
-              icon: Icons.people_outline, onTap: () => onGo(1)),
+              icon: Icons.people_outline, onTap: () => onGo('customers')),
           StatBox('اتحصّل النهارده', money(today), color: kPaid, icon: Icons.today),
           StatBox('اتحصّل الشهر ده', money(month), color: kPaid, icon: Icons.calendar_month),
         ]),
         const SectionTitle('رصيد البضاعة في المحل'),
         _grid([
-          StatBox('قيمة البضاعة بسعر الشرا', money(stockCost),
-              icon: Icons.inventory_2_outlined, onTap: () => onGo(2)),
+          if (Me.owner)
+            StatBox('قيمة البضاعة بسعر الشرا', money(stockCost),
+                icon: Icons.inventory_2_outlined, onTap: () => onGo('products')),
           StatBox('قيمة البضاعة بسعر البيع', money(stockSell),
-              icon: Icons.sell_outlined, onTap: () => onGo(2)),
-          StatBox('عدد القطع', num2(pieces), icon: Icons.category_outlined, onTap: () => onGo(2)),
+              icon: Icons.sell_outlined, onTap: () => onGo('products')),
+          StatBox('عدد القطع', num2(pieces), icon: Icons.category_outlined, onTap: () => onGo('products')),
           StatBox('أصناف قربت تخلص', '$low',
-              color: low > 0 ? kOwe : kPlum, icon: Icons.warning_amber, onTap: () => onGo(2)),
+              color: low > 0 ? kOwe : kPlum, icon: Icons.warning_amber, onTap: () => onGo('products')),
         ]),
         const SectionTitle('الشهر ده'),
         _grid([
@@ -153,7 +174,7 @@ class Dashboard extends StatelessWidget {
           StatBox('طلبات جديدة', '${live.newOrders}',
               color: live.newOrders > 0 ? Colors.blue : kPlum,
               icon: Icons.shopping_bag_outlined,
-              onTap: () => onGo(3)),
+              onTap: () => onGo('orders')),
           if (credits > 0) StatBox('أرصدة للعملاء عندك', money(credits), icon: Icons.savings_outlined),
         ]),
         if (top.isNotEmpty && top.first.value > 0) ...[
@@ -203,11 +224,26 @@ class MoreScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('المزيد')),
       body: ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
-        item(Icons.local_offer_outlined, 'العروض', 'العروض اللي بتنزل للعملاء في التطبيق',
-            const OffersAdmin()),
-        item(Icons.manage_accounts_outlined, 'حسابات العملاء في التطبيق',
-            'اللي سجلوا برقم التليفون: كلمة السر، الحذف، إضافة حساب', const AccountsScreen()),
-        item(Icons.settings_outlined, 'الإعدادات', 'النقط وبيانات المحل', const SettingsScreen()),
+        if (!Me.owner)
+          Card(
+            color: kBlush,
+            child: ListTile(
+              leading: const Icon(Icons.badge_outlined, color: kPlum),
+              title: Text('داخل باسم: ${Me.name}'),
+              subtitle: const Text('حساب موظف'),
+            ),
+          ),
+        if (Me.can('offers'))
+          item(Icons.local_offer_outlined, 'العروض', 'العروض اللي بتنزل للعملاء في التطبيق',
+              const OffersAdmin()),
+        if (Me.owner)
+          item(Icons.badge_outlined, 'المساعدين والموظفين', 'إضافة موظف وتحديد صلاحياته',
+              const StaffScreen()),
+        if (Me.owner)
+          item(Icons.manage_accounts_outlined, 'حسابات العملاء في التطبيق',
+              'اللي سجلوا برقم التليفون: كلمة السر، الحذف، إضافة حساب', const AccountsScreen()),
+        if (Me.owner)
+          item(Icons.settings_outlined, 'الإعدادات', 'النقط وبيانات المحل', const SettingsScreen()),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
