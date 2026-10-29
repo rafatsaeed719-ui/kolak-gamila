@@ -11,6 +11,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool register = false;
+  bool owner = false; // دخول صاحب المحل بالإيميل
   bool busy = false;
   bool hide = true;
   final phone = TextEditingController();
@@ -79,7 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Center(child: Image.asset('assets/logo.png', width: 200, height: 200)),
+                Center(
+                    child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset('assets/logo.png', width: 190, height: 190))),
                 const SizedBox(height: 12),
                 const Text(kStoreName,
                     textAlign: TextAlign.center,
@@ -99,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   }),
                 ),
                 const SizedBox(height: 16),
-                if (register) ...[
+                if (register && !owner) ...[
                   TextField(
                     controller: name,
                     decoration: const InputDecoration(
@@ -107,14 +111,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                if (owner)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: kBlush, borderRadius: BorderRadius.circular(12)),
+                    child: Text(
+                        register
+                            ? 'أول مرة بس: اعمل حساب صاحب المحل بإيميلك وكلمة سر من اختيارك.'
+                            : 'دخول صاحب المحل بالإيميل.',
+                        style: const TextStyle(color: kPlum)),
+                  ),
                 TextField(
+                  key: ValueKey(owner),
                   controller: phone,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: owner ? TextInputType.emailAddress : TextInputType.phone,
+                  autocorrect: false,
                   textDirection: TextDirection.ltr,
-                  decoration: const InputDecoration(
-                      labelText: 'رقم الموبايل',
-                      hintText: '01xxxxxxxxx',
-                      prefixIcon: Icon(Icons.phone_iphone)),
+                  decoration: InputDecoration(
+                      labelText: owner ? 'الإيميل' : 'رقم الموبايل',
+                      hintText: owner ? kAdminEmail : '01xxxxxxxxx',
+                      prefixIcon: Icon(owner ? Icons.alternate_email : Icons.phone_iphone)),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -155,8 +172,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Text(register ? 'سجّل' : 'ادخل'),
                 ),
                 const SizedBox(height: 16),
-                const Text('نسيت كلمة السر؟ كلّم المحل وهيغيّرهالك.',
-                    textAlign: TextAlign.center, style: TextStyle(color: kMuted, fontSize: 13)),
+                if (!owner)
+                  const Text('نسيت كلمة السر؟ كلّم المحل وهيغيّرهالك.',
+                      textAlign: TextAlign.center, style: TextStyle(color: kMuted, fontSize: 13))
+                else if (!register)
+                  TextButton(
+                    onPressed: () async {
+                      try {
+                        await auth.sendPasswordResetEmail(email: kAdminEmail);
+                        if (mounted) setState(() => error = 'بعتنالك رسالة على $kAdminEmail تغيّر منها كلمة السر');
+                      } catch (e) {
+                        if (mounted) setState(() => error = authError(e));
+                      }
+                    },
+                    child: const Text('نسيت كلمة السر؟ ابعتلي رسالة على الإيميل'),
+                  ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => setState(() {
+                    owner = !owner;
+                    error = '';
+                    phone.text = owner ? kAdminEmail : '';
+                  }),
+                  icon: Icon(owner ? Icons.phone_iphone : Icons.storefront_outlined, size: 18),
+                  label: Text(owner ? 'رجوع لدخول العملاء والموظفين' : 'دخول صاحب المحل'),
+                ),
               ]),
             ),
           ),
