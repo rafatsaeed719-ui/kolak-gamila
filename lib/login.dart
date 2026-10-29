@@ -79,10 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: Image.asset('assets/icon.png', width: 96, height: 96),
-                ),
+                Center(child: Image.asset('assets/logo.png', width: 200, height: 200)),
                 const SizedBox(height: 12),
                 const Text(kStoreName,
                     textAlign: TextAlign.center,
