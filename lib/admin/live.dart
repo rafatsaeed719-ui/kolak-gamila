@@ -44,7 +44,10 @@ class Live extends ChangeNotifier {
     notifyListeners();
   }
 
+  int _users = 0;
+
   void start() {
+    _users++;
     if (_subs.isNotEmpty) return;
     _subs.add(db.collection('customers').snapshots().listen((s) {
       customers = s.docs..sort((a, b) => toI(a.data()['code']).compareTo(toI(b.data()['code'])));
@@ -111,6 +114,9 @@ class Live extends ChangeNotifier {
   List<Doc> get staff => users.where((u) => u.data()['role'] == 'staff').toList();
 
   void stop() {
+    _users--;
+    if (_users > 0) return;
+    _users = 0;
     for (final s in _subs) {
       s.cancel();
     }

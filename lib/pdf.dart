@@ -11,7 +11,6 @@ import 'core.dart';
 
 // أبيض وأسود زي اللوجو
 const _black = PdfColor(0.07, 0.07, 0.07);
-const _soft = PdfColor(0.95, 0.95, 0.94);
 const _ink = PdfColor(0.1, 0.1, 0.1);
 const _grey = PdfColor(0.42, 0.42, 0.4);
 const _line = PdfColor(0.88, 0.88, 0.86);

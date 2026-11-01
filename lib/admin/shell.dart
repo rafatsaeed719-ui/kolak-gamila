@@ -535,7 +535,10 @@ class AppLock {
   static String? get pin => AppPrefs.getStr('pin');
   static bool get onOpen => AppPrefs.getStr('lockOnOpen') == '1';
 
+  static bool _checked = false;
   static void lockOnOpenIfNeeded() {
+    if (_checked) return;
+    _checked = true;
     if (onOpen && (pin ?? '').isNotEmpty) locked.value = true;
   }
 
