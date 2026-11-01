@@ -4,6 +4,7 @@ import '../core.dart';
 import '../ops.dart';
 import 'customers.dart';
 import 'live.dart';
+import 'shell.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -26,12 +27,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           return s == 'cancelled';
         }).toList();
         return Scaffold(
-          appBar: AppBar(title: const Text('طلبات العملاء')),
+          appBar: pageAppBar(context, 'طلبات العملاء'),
           body: Column(children: [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(value: 'open', label: Text('مفتوحة')),
                   ButtonSegment(value: 'done', label: Text('اتسلّمت')),
                   ButtonSegment(value: 'cancelled', label: Text('ملغية')),
@@ -42,10 +43,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             Expanded(
               child: list.isEmpty
-                  ? const EmptyView('مفيش طلبات هنا',
+                  ? EmptyView('مفيش طلبات هنا',
                       text: 'العملاء بيطلبوا من المعرض والعروض في التطبيق.', icon: Icons.shopping_bag_outlined)
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
+                      padding: EdgeInsets.only(bottom: 24),
                       itemCount: list.length,
                       itemBuilder: (_, i) => OrderCard(list[i]),
                     ),
@@ -70,21 +71,21 @@ class OrderCard extends StatelessWidget {
     final cust = Live.I.customerForPhone(phone);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(
               child: Text((m['name'] ?? '').toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ),
             orderStatusPill(status),
           ]),
           Row(children: [
-            Text(phone, textDirection: TextDirection.ltr, style: const TextStyle(color: kMuted)),
-            const SizedBox(width: 8),
-            if (cust != null) CodeBadge(cust.data()['code']) else const Pill('مش في الدفتر لسه', kMuted),
+            Text(phone, textDirection: TextDirection.ltr, style: TextStyle(color: kMuted)),
+            SizedBox(width: 8),
+            if (cust != null) CodeBadge(cust.data()['code']) else Pill('مش في الدفتر لسه', kMuted),
             const Spacer(),
-            Text(fmtDate(m['createdAt'], time: true), style: const TextStyle(fontSize: 12, color: kMuted)),
+            Text(fmtDate(m['createdAt'], time: true), style: TextStyle(fontSize: 12, color: kMuted)),
           ]),
           const Divider(),
           ...items.map((it) => Row(children: [
@@ -93,28 +94,28 @@ class OrderCard extends StatelessWidget {
               ])),
           const Divider(),
           Row(children: [
-            const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold)),
             const Spacer(),
-            Text(money(m['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: kPlum)),
+            Text(money(m['total']), style: TextStyle(fontWeight: FontWeight.bold, color: kInk)),
           ]),
           if ((m['note'] ?? '').toString().isNotEmpty) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text('ملاحظة: ${m['note']}'),
           ],
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (status == 'new')
               OutlinedButton(
                 onPressed: () async {
                   await db.collection('orders').doc(o.id).update({'status': 'ready'});
                 },
-                child: const Text('جاهز للاستلام'),
+                child: Text('جاهز للاستلام'),
               ),
             if (status == 'new' || status == 'ready')
               FilledButton.icon(
                 onPressed: () => _deliver(context, m),
-                icon: const Icon(Icons.check),
-                label: const Text('اتسلّم — سجّله على حسابه'),
+                icon: Icon(Icons.check),
+                label: Text('اتسلّم — سجّله على حسابه'),
               ),
             if (status == 'new' || status == 'ready')
               TextButton(
@@ -125,20 +126,20 @@ class OrderCard extends StatelessWidget {
                     await db.collection('orders').doc(o.id).update({'status': 'cancelled'});
                   }
                 },
-                child: const Text('إلغاء'),
+                child: Text('إلغاء'),
               ),
             if (phone.isNotEmpty)
               TextButton.icon(
                 onPressed: () => openWhatsApp(phone,
-                    'أهلاً ${m['name'] ?? ''} 🌸 طلبك من «$kStoreName» بقيمة ${money(m['total'])} ${status == 'ready' ? 'جاهز للاستلام' : 'وصلنا'}.'),
-                icon: const Icon(Icons.chat_outlined, size: 18),
-                label: const Text('واتساب'),
+                    'أهلاً ${m['name'] ?? ''} 🌸 طلبك من «$Brand.name» بقيمة ${money(m['total'])} ${status == 'ready' ? 'جاهز للاستلام' : 'وصلنا'}.'),
+                icon: Icon(Icons.chat_outlined, size: 18),
+                label: Text('واتساب'),
               ),
             if (status == 'delivered' && m['customerId'] != null)
               TextButton(
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => CustomerDetail(customerId: m['customerId']))),
-                child: const Text('افتح حسابه'),
+                child: Text('افتح حسابه'),
               ),
           ]),
         ]),
@@ -151,15 +152,15 @@ class OrderCard extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('تسليم الطلب'),
+        title: Text('تسليم الطلب'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('هيتسجل بيع بـ ${money(m['total'])} على حساب ${m['name']}، والبضاعة هتتخصم من المخزن.'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           numField(paid, 'دفع كام وهو بيستلم؟ (اختياري)'),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('سجّل')),
+          TextButton(onPressed: () => Navigator.pop(d, false), child: Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(d, true), child: Text('سجّل')),
         ],
       ),
     );

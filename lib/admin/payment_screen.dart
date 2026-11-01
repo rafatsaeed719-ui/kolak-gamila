@@ -19,6 +19,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool typed = false;
   bool busy = false;
   DateTime date = DateTime.now();
+  String method = 'cash';
 
   String _key(OpenItem o) => '${o.sale.id}:${o.index}';
 
@@ -34,23 +35,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('دفعة — ${c?.data()['name'] ?? ''}')),
-      body: ListView(padding: const EdgeInsets.only(bottom: 110), children: [
+      body: ListView(padding: EdgeInsets.only(bottom: 110), children: [
         Card(
           child: ListTile(
-            title: const Text('عليه دلوقتي'),
+            title: Text('عليه دلوقتي'),
             trailing: Text(money(acc.balance),
-                style: const TextStyle(fontWeight: FontWeight.bold, color: kOwe, fontSize: 17)),
+                style: TextStyle(fontWeight: FontWeight.bold, color: kOwe, fontSize: 17)),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(children: [
             numField(amount, 'دفع كام؟', autofocus: true, onChanged: (_) => setState(() => typed = true)),
-            const SizedBox(height: 10),
-            TextField(controller: note, decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)')),
+            SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: method,
+              decoration: InputDecoration(labelText: 'طريقة الدفع'),
+              items: kPayMethods.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+              onChanged: (v) => setState(() => method = v ?? 'cash'),
+            ),
+            SizedBox(height: 10),
+            TextField(controller: note, decoration: InputDecoration(labelText: 'ملاحظة (اختياري)')),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event),
+              leading: Icon(Icons.event),
               title: Text('التاريخ: ${fmtDate(date)}'),
               trailing: TextButton(
                 onPressed: () async {
@@ -58,7 +66,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       context: context, initialDate: date, firstDate: DateTime(2020), lastDate: DateTime(2100));
                   if (d != null) setState(() => date = d);
                 },
-                child: const Text('تغيير'),
+                child: Text('تغيير'),
               ),
             ),
           ]),
@@ -71,15 +79,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       chosen.clear();
                       if (!typed) amount.clear();
                     }),
-                    child: const Text('مسح الاختيار'))),
-        const Padding(
+                    child: Text('مسح الاختيار'))),
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text('علّم على الأصناف اللي دفع تمنها. لو مااخترتش حاجة، الدفعة بتتحسب على الأقدم.',
               style: TextStyle(color: kMuted, fontSize: 13)),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         if (open.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16),
             child: Text('مفيش أصناف عليها فلوس.', style: TextStyle(color: kMuted)),
           ),
@@ -107,7 +115,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   '${fmtDate(o.sale.date)}${o.sale.invoiceNo > 0 ? ' · فاتورة #${o.sale.invoiceNo}' : ''}'
                   '${o.remaining < o.total ? ' · اتدفع منه ${num2(o.total - o.remaining)}' : ''}'),
               secondary: Text(num2(o.remaining),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: kOwe)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: kOwe)),
               controlAffinity: ListTileControlAffinity.leading,
             ),
           );
@@ -117,13 +125,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         elevation: 8,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: Row(children: [
               Expanded(
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   if (selected.isNotEmpty)
                     Text('الأصناف المختارة: ${money(selTotal)}',
-                        style: const TextStyle(fontSize: 12, color: kMuted)),
+                        style: TextStyle(fontSize: 12, color: kMuted)),
                   Text('هيبقى عليه ${money(acc.balance - amt)}',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -149,6 +157,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             chosen: selected,
                             note: note.text.trim(),
                             date: date,
+                            method: method,
                           );
                           if (!context.mounted) return;
                           Navigator.pop(context);
@@ -159,8 +168,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         }
                       },
                 style: FilledButton.styleFrom(
-                    backgroundColor: kPaid, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14)),
-                child: const Text('حفظ الدفعة'),
+                    backgroundColor: kPaid, padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14)),
+                child: Text('حفظ الدفعة'),
               ),
             ]),
           ),

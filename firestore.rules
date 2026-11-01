@@ -26,19 +26,24 @@ service cloud.firestore {
     match /entries/{id} {
       allow read: if isAdmin() || staff() || mine(resource.data);
       allow create: if can('sell') || can('orders') || can('edit');
-      allow update: if can('edit') || (can('sell') && onlyItems()) || (can('customers') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone']));
+      allow update: if can('edit') || (can('sell') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items', 'extraPaid'])) || (can('customers') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone']));
       allow delete: if can('edit');
     }
     match /products/{id} {
       allow read: if signedIn();
       allow create, delete: if can('products');
-      allow update: if can('products') || ((can('sell') || can('orders') || can('edit')) && onlyStock());
+      allow update: if can('products') || ((can('sell') || can('orders') || can('edit') || can('purchases')) && onlyStock());
     }
     match /offers/{id} { allow read: if signedIn(); allow write: if can('offers'); }
-    match /productCosts/{id} { allow read, write: if isAdmin(); }
+    match /productCosts/{id} { allow read: if isAdmin(); allow write: if can('purchases') || can('products'); }
+    match /suppliers/{id} { allow read: if isAdmin() || staff(); allow write: if can('purchases'); }
+    match /purchases/{id} { allow read: if isAdmin() || staff(); allow write: if can('purchases'); }
+    match /vouchers/{id} { allow read: if isAdmin() || staff(); allow write: if can('purchases'); }
+    match /expenses/{id} { allow read: if can('expenses') || can('reports'); allow write: if can('expenses'); }
+    match /damaged/{id} { allow read: if isAdmin() || staff(); allow write: if can('products') || can('edit'); }
     match /meta/{id} {
       allow read: if signedIn();
-      allow write: if isAdmin() || (id == 'counters' && (can('sell') || can('orders') || can('edit')));
+      allow write: if isAdmin() || (id == 'counters' && (can('sell') || can('orders') || can('edit') || can('purchases')));
     }
     match /orders/{id} {
       allow read: if isAdmin() || staff() || (active() && resource.data.uid == request.auth.uid);

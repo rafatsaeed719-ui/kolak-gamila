@@ -76,23 +76,23 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: BoxConstraints(maxWidth: 420),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Center(
                     child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: Image.asset('assets/logo.png', width: 190, height: 190))),
-                const SizedBox(height: 12),
-                const Text(kStoreName,
+                SizedBox(height: 12),
+                Text(kStoreName,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: kPlum)),
-                const Text('العروض الجديدة كل يوم، وحسابك معاك على طول',
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: kInk)),
+                Text('العروض الجديدة كل يوم، وحسابك معاك على طول',
                     textAlign: TextAlign.center, style: TextStyle(color: kMuted)),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 SegmentedButton<bool>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(value: false, label: Text('دخول')),
                     ButtonSegment(value: true, label: Text('حساب جديد')),
                   ],
@@ -102,25 +102,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     error = '';
                   }),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 if (register && !owner) ...[
                   TextField(
                     controller: name,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                         labelText: 'الاسم', prefixIcon: Icon(Icons.person_outline)),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                 ],
                 if (owner)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(10),
+                    margin: EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.all(10),
                     decoration: BoxDecoration(color: kBlush, borderRadius: BorderRadius.circular(12)),
                     child: Text(
                         register
                             ? 'أول مرة بس: اعمل حساب صاحب المحل بإيميلك وكلمة سر من اختيارك.'
                             : 'دخول صاحب المحل بالإيميل.',
-                        style: const TextStyle(color: kPlum)),
+                        style: TextStyle(color: kInk)),
                   ),
                 TextField(
                   key: ValueKey(owner),
@@ -133,13 +133,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: owner ? kAdminEmail : '01xxxxxxxxx',
                       prefixIcon: Icon(owner ? Icons.alternate_email : Icons.phone_iphone)),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 TextField(
                   controller: pass,
                   obscureText: hide,
                   decoration: InputDecoration(
                     labelText: 'كلمة السر',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(hide ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                       onPressed: () => setState(() => hide = !hide),
@@ -148,32 +148,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   onSubmitted: (_) => register ? null : _go(),
                 ),
                 if (register) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: pass2,
                     obscureText: hide,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                         labelText: 'أكّد كلمة السر', prefixIcon: Icon(Icons.lock_outline)),
                   ),
                 ],
                 if (error.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(error, style: const TextStyle(color: kOwe)),
+                  SizedBox(height: 12),
+                  Text(error, style: TextStyle(color: kOwe)),
                 ],
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 FilledButton(
                   onPressed: busy ? null : _go,
-                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                  style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
                   child: busy
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : Text(register ? 'سجّل' : 'ادخل'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 if (!owner)
-                  const Text('نسيت كلمة السر؟ كلّم المحل وهيغيّرهالك.',
+                  Text('نسيت كلمة السر؟ كلّم المحل وهيغيّرهالك.',
                       textAlign: TextAlign.center, style: TextStyle(color: kMuted, fontSize: 13))
                 else if (!register)
                   TextButton(
@@ -185,9 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (mounted) setState(() => error = authError(e));
                       }
                     },
-                    child: const Text('نسيت كلمة السر؟ ابعتلي رسالة على الإيميل'),
+                    child: Text('نسيت كلمة السر؟ ابعتلي رسالة على الإيميل'),
                   ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: () => setState(() {
                     owner = !owner;
@@ -222,12 +222,12 @@ class _CompleteProfileState extends State<CompleteProfile> {
     final email = auth.currentUser?.email ?? '';
     final phone = email.split('@').first;
     return Scaffold(
-      appBar: AppBar(title: const Text('كمّل بياناتك')),
-      body: ListView(padding: const EdgeInsets.all(20), children: [
+      appBar: AppBar(title: Text('كمّل بياناتك')),
+      body: ListView(padding: EdgeInsets.all(20), children: [
         Text('رقمك: $phone', textDirection: TextDirection.ltr, textAlign: TextAlign.right),
-        const SizedBox(height: 12),
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'الاسم')),
-        const SizedBox(height: 16),
+        SizedBox(height: 12),
+        TextField(controller: name, decoration: InputDecoration(labelText: 'الاسم')),
+        SizedBox(height: 16),
         FilledButton(
           onPressed: busy
               ? null
@@ -246,9 +246,9 @@ class _CompleteProfileState extends State<CompleteProfile> {
                   }
                   if (mounted) setState(() => busy = false);
                 },
-          child: const Text('حفظ'),
+          child: Text('حفظ'),
         ),
-        TextButton(onPressed: () => auth.signOut(), child: const Text('خروج')),
+        TextButton(onPressed: () => auth.signOut(), child: Text('خروج')),
       ]),
     );
   }

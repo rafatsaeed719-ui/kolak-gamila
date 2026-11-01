@@ -98,7 +98,7 @@ class Mine extends ChangeNotifier {
   List<Doc> orders = [];
   List<Entry> entries = [];
   Doc? ledger;
-  StoreSettings settings = const StoreSettings();
+  StoreSettings settings = StoreSettings();
 
   Account get account => Account(entries, settings);
 
@@ -148,18 +148,18 @@ class _CustomerHomeState extends State<CustomerHome> {
             selectedIndex: tab,
             onDestinationSelected: (i) => setState(() => tab = i),
             destinations: [
-              const NavigationDestination(icon: Icon(Icons.local_offer_outlined), label: 'العروض'),
-              const NavigationDestination(icon: Icon(Icons.storefront_outlined), label: 'المعرض'),
+              NavigationDestination(icon: Icon(Icons.local_offer_outlined), label: 'العروض'),
+              NavigationDestination(icon: Icon(Icons.storefront_outlined), label: 'المعرض'),
               NavigationDestination(
                 icon: Badge(
                   isLabelVisible: Cart.I.count > 0,
                   label: Text('${Cart.I.count}'),
-                  child: const Icon(Icons.shopping_cart_outlined),
+                  child: Icon(Icons.shopping_cart_outlined),
                 ),
                 label: 'السلة',
               ),
-              const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'طلباتي'),
-              const NavigationDestination(icon: Icon(Icons.person_outline), label: 'حسابي'),
+              NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'طلباتي'),
+              NavigationDestination(icon: Icon(Icons.person_outline), label: 'حسابي'),
             ],
           ),
         );
@@ -179,32 +179,32 @@ class _OffersTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final acc = mine.account;
     return Scaffold(
-      appBar: AppBar(title: const Text(kStoreName)),
-      body: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+      appBar: AppBar(title: Text(Brand.name)),
+      body: ListView(padding: EdgeInsets.only(bottom: 24), children: [
         Card(
           color: kBlush,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('أهلاً ${me['name'] ?? ''} 🌸',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                   Text(
                     acc.balance > 0.004 ? 'عليك ${money(acc.balance)}' : 'حسابك خالص',
                     style: TextStyle(color: acc.balance > 0.004 ? kOwe : kPaid),
                   ),
                 ]),
               ),
-              const Icon(Icons.stars_rounded, color: Colors.amber),
-              const SizedBox(width: 4),
-              Text('${acc.points} نقطة', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Icon(Icons.stars_rounded, color: Colors.amber),
+              SizedBox(width: 4),
+              Text('${acc.points} نقطة', style: TextStyle(fontWeight: FontWeight.bold)),
             ]),
           ),
         ),
         SectionTitle('عروض النهارده (${mine.offers.length})'),
         if (mine.offers.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(24),
             child: Text('مفيش عروض دلوقتي، تابعنا كل يوم 💐',
                 textAlign: TextAlign.center, style: TextStyle(color: kMuted)),
@@ -231,19 +231,19 @@ class OfferCard extends StatelessWidget {
             child: AspectRatio(aspectRatio: 16 / 9, child: B64Image(img)),
           ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text((m['title'] ?? '').toString(),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             if ((m['body'] ?? '').toString().isNotEmpty) Text(m['body'].toString()),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Row(children: [
               Text(money(m['price']),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kPlum)),
-              const SizedBox(width: 8),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kInk)),
+              SizedBox(width: 8),
               if (toD(m['oldPrice']) > toD(m['price']))
                 Text(money(m['oldPrice']),
-                    style: const TextStyle(color: kMuted, decoration: TextDecoration.lineThrough)),
+                    style: TextStyle(color: kMuted, decoration: TextDecoration.lineThrough)),
               const Spacer(),
               FilledButton.icon(
                 onPressed: () {
@@ -251,12 +251,12 @@ class OfferCard extends StatelessWidget {
                       '${m['title'] ?? ''} (عرض)', '', img, toD(m['price']));
                   toast(context, 'اتضاف للسلة');
                 },
-                icon: const Icon(Icons.add_shopping_cart, size: 18),
-                label: const Text('اطلب'),
+                icon: Icon(Icons.add_shopping_cart, size: 18),
+                label: Text('اطلب'),
               ),
             ]),
             if (m['until'] != null)
-              Text('العرض لحد ${fmtDate(m['until'])}', style: const TextStyle(fontSize: 12, color: kMuted)),
+              Text('العرض لحد ${fmtDate(m['until'])}', style: TextStyle(fontSize: 12, color: kMuted)),
           ]),
         ),
       ]),
@@ -282,21 +282,21 @@ class _GalleryTabState extends State<_GalleryTab> {
         .where((p) => query.isEmpty || (p.data()['name'] ?? '').toString().toLowerCase().contains(query))
         .toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('المعرض')),
+      appBar: AppBar(title: Text('المعرض')),
       body: Column(children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: TextField(
-            decoration: const InputDecoration(hintText: 'دوّر على منتج', prefixIcon: Icon(Icons.search)),
+            decoration: InputDecoration(hintText: 'دوّر على منتج', prefixIcon: Icon(Icons.search)),
             onChanged: (v) => setState(() => q = v),
           ),
         ),
         Expanded(
           child: list.isEmpty
-              ? const EmptyView('مفيش منتجات هنا لسه', icon: Icons.storefront_outlined)
+              ? EmptyView('مفيش منتجات هنا لسه', icon: Icons.storefront_outlined)
               : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  padding: EdgeInsets.fromLTRB(12, 0, 12, 24),
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 220, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.7),
                   itemCount: list.length,
                   itemBuilder: (_, i) => _product(context, list[i]),
@@ -325,16 +325,16 @@ class _GalleryTabState extends State<_GalleryTab> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text((m['name'] ?? '').toString(),
-                maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(money(m['price']), style: const TextStyle(color: kPlum, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
+                maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(money(m['price']), style: TextStyle(color: kInk, fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
               child: out
-                  ? const Text('خلصت', textAlign: TextAlign.center, style: TextStyle(color: kOwe))
+                  ? Text('خلصت', textAlign: TextAlign.center, style: TextStyle(color: kOwe))
                   : FilledButton.tonal(
                       onPressed: () => Cart.I.add(p.id, p.id, (m['name'] ?? '').toString(),
                           (m['code'] ?? '').toString(), m['image']?.toString(), toD(m['price'])),
@@ -400,10 +400,10 @@ class _CartTabState extends State<_CartTab> {
   Widget build(BuildContext context) {
     final cart = Cart.I;
     return Scaffold(
-      appBar: AppBar(title: const Text('السلة')),
+      appBar: AppBar(title: Text('السلة')),
       body: cart.lines.isEmpty
-          ? const EmptyView('السلة فاضية', text: 'اختار من العروض أو المعرض.', icon: Icons.shopping_cart_outlined)
-          : ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+          ? EmptyView('السلة فاضية', text: 'اختار من العروض أو المعرض.', icon: Icons.shopping_cart_outlined)
+          : ListView(padding: EdgeInsets.only(bottom: 24), children: [
               ...cart.lines.values.map((l) => Card(
                     child: ListTile(
                       leading: ClipRRect(
@@ -412,37 +412,37 @@ class _CartTabState extends State<_CartTab> {
                       subtitle: Text('${money(l.price)} × ${l.qty} = ${money(l.total)}'),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         IconButton(
-                            icon: const Icon(Icons.remove_circle_outline),
+                            icon: Icon(Icons.remove_circle_outline),
                             onPressed: () => cart.setQty(l.key, l.qty - 1)),
                         Text('${l.qty}'),
                         IconButton(
-                            icon: const Icon(Icons.add_circle_outline, color: kPlum),
+                            icon: Icon(Icons.add_circle_outline, color: kInk),
                             onPressed: () => cart.setQty(l.key, l.qty + 1)),
                       ]),
                     ),
                   )),
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 child: TextField(
                   controller: note,
-                  decoration: const InputDecoration(labelText: 'ملاحظة للمحل (اختياري)'),
+                  decoration: InputDecoration(labelText: 'ملاحظة للمحل (اختياري)'),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Row(children: [
-                  const Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('الإجمالي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const Spacer(),
                   Text(money(cart.total),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kPlum)),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kInk)),
                 ]),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: FilledButton(
                   onPressed: busy ? null : _order,
-                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                  child: const Text('ابعت الطلب'),
+                  style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+                  child: Text('ابعت الطلب'),
                 ),
               ),
             ]),
@@ -459,30 +459,30 @@ class _OrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('طلباتي')),
+      appBar: AppBar(title: Text('طلباتي')),
       body: mine.orders.isEmpty
-          ? const EmptyView('مفيش طلبات لسه', icon: Icons.receipt_long_outlined)
+          ? EmptyView('مفيش طلبات لسه', icon: Icons.receipt_long_outlined)
           : ListView(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: EdgeInsets.only(bottom: 24),
               children: mine.orders.map((o) {
                 final m = o.data();
                 final items = ((m['items'] as List?) ?? []).map((e) => Map<String, dynamic>.from(e as Map));
                 final status = (m['status'] ?? 'new').toString();
                 return Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Expanded(
                             child: Text(fmtDate(m['createdAt'], time: true),
-                                style: const TextStyle(color: kMuted, fontSize: 12))),
+                                style: TextStyle(color: kMuted, fontSize: 12))),
                         orderStatusPill(status),
                       ]),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       ...items.map((it) => Text('${it['name']}  ×${num2(it['qty'])}')),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Row(children: [
-                        Text(money(m['total']), style: const TextStyle(fontWeight: FontWeight.bold, color: kPlum)),
+                        Text(money(m['total']), style: TextStyle(fontWeight: FontWeight.bold, color: kInk)),
                         const Spacer(),
                         if (status == 'new')
                           TextButton(
@@ -493,7 +493,7 @@ class _OrdersTab extends StatelessWidget {
                                 await db.collection('orders').doc(o.id).update({'status': 'cancelled'});
                               }
                             },
-                            child: const Text('إلغاء'),
+                            child: Text('إلغاء'),
                           ),
                       ]),
                     ]),
@@ -518,10 +518,10 @@ class _AccountTab extends StatelessWidget {
     final ledger = mine.ledger?.data();
     final customer = ledger ?? {'name': me['name'], 'phone': me['phone'], 'code': 0};
     return Scaffold(
-      appBar: AppBar(title: const Text('حسابي'), actions: [
+      appBar: AppBar(title: Text('حسابي'), actions: [
         IconButton(
           tooltip: 'خروج',
-          icon: const Icon(Icons.logout),
+          icon: Icon(Icons.logout),
           onPressed: () async {
             if (await confirm(context, 'خروج', 'تخرج من حسابك؟', ok: 'خروج')) {
               Cart.I.clear();
@@ -530,41 +530,41 @@ class _AccountTab extends StatelessWidget {
           },
         ),
       ]),
-      body: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+      body: ListView(padding: EdgeInsets.only(bottom: 24), children: [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(
                     child: Text((me['name'] ?? '').toString(),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
                 if (ledger != null) CodeBadge(ledger['code']),
               ]),
               Text((me['phone'] ?? '').toString(),
-                  textDirection: TextDirection.ltr, style: const TextStyle(color: kMuted)),
-              const SizedBox(height: 12),
+                  textDirection: TextDirection.ltr, style: TextStyle(color: kMuted)),
+              SizedBox(height: 12),
               Row(children: [
                 _box('اشتريت بـ', acc.debit, kOwe),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _box('دفعت', acc.paid, kPaid),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _box(acc.balance >= 0 ? 'الباقي عليك' : 'ليك رصيد', acc.balance.abs(),
                     acc.balance > 0.004 ? kOwe : kPaid),
               ]),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Row(children: [
-                const Icon(Icons.stars_rounded, color: Colors.amber),
-                const SizedBox(width: 4),
-                Text('${acc.points} نقطة', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Icon(Icons.stars_rounded, color: Colors.amber),
+                SizedBox(width: 4),
+                Text('${acc.points} نقطة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ]),
-              Text(mine.settings.rulesText, style: const TextStyle(fontSize: 12, color: kMuted)),
+              Text(mine.settings.rulesText, style: TextStyle(fontSize: 12, color: kMuted)),
               if (acc.entries.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => shareStatementPdf(context, customer, acc),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('كشف حسابي PDF'),
+                  icon: Icon(Icons.picture_as_pdf_outlined),
+                  label: Text('كشف حسابي PDF'),
                 ),
               ],
             ]),
@@ -572,7 +572,7 @@ class _AccountTab extends StatelessWidget {
         ),
         SectionTitle('فواتيري وحركاتي (${acc.entries.length})'),
         if (acc.entries.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(24),
             child: Text('لسه مفيش حركات على حسابك.', textAlign: TextAlign.center, style: TextStyle(color: kMuted)),
           ),
@@ -583,10 +583,10 @@ class _AccountTab extends StatelessWidget {
 
   Widget _box(String label, double v, Color color) => Expanded(
         child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xFFF6EFF1), borderRadius: BorderRadius.circular(10)),
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(color: Color(0xFFF6EFF1), borderRadius: BorderRadius.circular(10)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: kMuted)),
+            Text(label, style: TextStyle(fontSize: 11, color: kMuted)),
             FittedBox(
                 child: Text(num2(v), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: color))),
           ]),

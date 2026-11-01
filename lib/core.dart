@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'firebase_options.dart';
@@ -20,12 +21,70 @@ const String kStoreName = 'كلك جميلة';
 /// حسابات العملاء بتتسجل داخلياً كـ 2010xxxxxxxx@kolak-gamila.app
 const String kUserDomain = 'kolak-gamila.app';
 
-const Color kPlum = Color(0xFF7A1F47);
-const Color kRose = Color(0xFFC98A9E);
-const Color kBlush = Color(0xFFF8EEF1);
-const Color kOwe = Color(0xFFB4232F);
-const Color kPaid = Color(0xFF1D7A52);
-const Color kMuted = Color(0xFF7D6670);
+// ======================== الألوان (أبيض وأسود زي اللوجو) ========================
+
+/// تفضيلات الجهاز: الوضع الليلي، حجم الخط، القفل، الفلاتر
+class AppPrefs {
+  static SharedPreferences? _p;
+  static bool dark = false;
+  static final ValueNotifier<int> version = ValueNotifier(0);
+  static final ValueNotifier<double> textScale = ValueNotifier(1.0);
+
+  static Future<void> load() async {
+    try {
+      _p = await SharedPreferences.getInstance();
+      dark = _p!.getBool('dark') ?? false;
+      textScale.value = _p!.getDouble('textScale') ?? 1.0;
+    } catch (_) {}
+  }
+
+  static void setDark(bool v) {
+    dark = v;
+    _p?.setBool('dark', v);
+    version.value++;
+  }
+
+  static void bumpText(double delta) {
+    final v = (textScale.value + delta).clamp(0.8, 1.5);
+    textScale.value = (v * 10).round() / 10;
+    _p?.setDouble('textScale', textScale.value);
+  }
+
+  static String? getStr(String k) => _p?.getString(k);
+  static void setStr(String k, String? v) {
+    if (v == null) {
+      _p?.remove(k);
+    } else {
+      _p?.setString(k, v);
+    }
+  }
+}
+
+bool get _dk => AppPrefs.dark;
+
+/// الأساسي: أسود (أبيض في الوضع الليلي)
+Color get kInk => _dk ? Color(0xFFF2F2F2) : Color(0xFF111111);
+/// الكلام اللي فوق الأساسي
+Color get kOnInk => _dk ? Color(0xFF111111) : Colors.white;
+Color get kBg => _dk ? Color(0xFF0E0E0E) : Color(0xFFF4F4F2);
+Color get kSurface => _dk ? Color(0xFF191919) : Colors.white;
+Color get kLine => _dk ? Color(0xFF2C2C2C) : Color(0xFFE5E5E2);
+Color get kBlush => _dk ? Color(0xFF242424) : Color(0xFFF0F0EE);
+Color get kRose => _dk ? Color(0xFF6E6E6E) : Color(0xFFA3A3A0);
+Color get kMuted => _dk ? Color(0xFFA6A6A6) : Color(0xFF6A6A66);
+Color get kOwe => _dk ? Color(0xFFFF8A80) : Color(0xFFB3261E);
+Color get kPaid => _dk ? Color(0xFF6FD3A0) : Color(0xFF1E7B4F);
+Color get kWarn => _dk ? Color(0xFFF2C14E) : Color(0xFFA86B00);
+Color get kInfo => _dk ? Color(0xFF8AB4F8) : Color(0xFF1A5FB4);
+/// القايمة الجانبية سودا في الوضعين
+const Color kSide = Color(0xFF0C0C0C);
+
+/// اسم المحل ولوجوه (من «هوية نشاطي»)
+class Brand {
+  static String name = kStoreName;
+  static String slogan = 'You are all beautiful';
+  static String logo = '';
+}
 
 final db = FirebaseFirestore.instance;
 final auth = FirebaseAuth.instance;
@@ -51,7 +110,9 @@ const Map<String, String> kPerms = {
   'products': 'تعديل المنتجات والمخزن',
   'offers': 'العروض',
   'edit': 'تعديل وحذف الحركات وتعديل الحسابات',
-  'reports': 'يشوف الإجماليات (الفلوس اللي برّه ورصيد البضاعة)',
+  'reports': 'يشوف الإجماليات والتقارير',
+  'purchases': 'المشتريات والموردين وسندات الصرف',
+  'expenses': 'المصروفات',
 };
 const List<String> kDefaultStaffPerms = ['sell', 'customers', 'orders'];
 
@@ -157,19 +218,82 @@ class StoreSettings {
   final double pointThreshold; // أي عملية أكبر من (أو تساوي في الدفع) المبلغ ده = نقطة
   final String storePhone;
   final String storeAddress;
-  const StoreSettings({this.pointThreshold = 200, this.storePhone = '', this.storeAddress = ''});
+  // هوية النشاط
+  final String storeName;
+  final String slogan;
+  final String logo; // base64
+  final String whatsapp;
+  // مصمم الفاتورة
+  final String paper; // a4 / a5 / roll
+  final bool showLogo;
+  final bool showCodes;
+  final bool showBalance;
+  final bool showStoreInfo;
+  final String header;
+  final String footer;
+  final List<String> expenseCats;
 
-  factory StoreSettings.fromMap(Map<String, dynamic>? m) => StoreSettings(
-        pointThreshold: toD(m?['pointThreshold'] ?? 200) <= 0 ? 200 : toD(m?['pointThreshold'] ?? 200),
-        storePhone: (m?['storePhone'] ?? '').toString(),
-        storeAddress: (m?['storeAddress'] ?? '').toString(),
-      );
+  const StoreSettings({
+    this.pointThreshold = 200,
+    this.storePhone = '',
+    this.storeAddress = '',
+    this.storeName = kStoreName,
+    this.slogan = 'You are all beautiful',
+    this.logo = '',
+    this.whatsapp = '',
+    this.paper = 'a5',
+    this.showLogo = true,
+    this.showCodes = true,
+    this.showBalance = true,
+    this.showStoreInfo = true,
+    this.header = '',
+    this.footer = 'شكراً لتعاملك معانا',
+    this.expenseCats = const ['إيجار', 'كهربا ومياه', 'مرتبات', 'مواصلات', 'تغليف', 'صيانة', 'أخرى'],
+  });
+
+  factory StoreSettings.fromMap(Map<String, dynamic>? m) {
+    const d = StoreSettings();
+    bool b(String k, bool def) => m?[k] is bool ? m![k] as bool : def;
+    String t(String k, String def) => (m?[k] ?? def).toString();
+    final cats = (m?['expenseCats'] as List?)?.map((e) => e.toString()).toList();
+    return StoreSettings(
+      pointThreshold: toD(m?['pointThreshold'] ?? 200) <= 0 ? 200 : toD(m?['pointThreshold'] ?? 200),
+      storePhone: t('storePhone', ''),
+      storeAddress: t('storeAddress', ''),
+      storeName: t('storeName', '').trim().isEmpty ? kStoreName : t('storeName', kStoreName),
+      slogan: t('slogan', d.slogan),
+      logo: t('logo', ''),
+      whatsapp: t('whatsapp', ''),
+      paper: t('paper', 'a5'),
+      showLogo: b('showLogo', true),
+      showCodes: b('showCodes', true),
+      showBalance: b('showBalance', true),
+      showStoreInfo: b('showStoreInfo', true),
+      header: t('header', ''),
+      footer: t('footer', d.footer),
+      expenseCats: (cats == null || cats.isEmpty) ? d.expenseCats : cats,
+    );
+  }
 
   Map<String, dynamic> toMap() => {
         'pointThreshold': pointThreshold,
         'storePhone': storePhone,
         'storeAddress': storeAddress,
+        'storeName': storeName,
+        'slogan': slogan,
+        'logo': logo,
+        'whatsapp': whatsapp,
+        'paper': paper,
+        'showLogo': showLogo,
+        'showCodes': showCodes,
+        'showBalance': showBalance,
+        'showStoreInfo': showStoreInfo,
+        'header': header,
+        'footer': footer,
+        'expenseCats': expenseCats,
       };
+
+  StoreSettings copyWith(Map<String, dynamic> changes) => StoreSettings.fromMap({...toMap(), ...changes});
 
   String get rulesText =>
       'نقطة على كل فاتورة أكبر من ${num2(pointThreshold)} ج، ونقطة على كل دفعة ${num2(pointThreshold)} ج أو أكتر';
@@ -178,7 +302,27 @@ class StoreSettings {
 DocumentReference<Map<String, dynamic>> get settingsRef => db.collection('meta').doc('settings');
 DocumentReference<Map<String, dynamic>> get countersRef => db.collection('meta').doc('counters');
 
-Stream<StoreSettings> settingsStream() => settingsRef.snapshots().map((s) => StoreSettings.fromMap(s.data()));
+Stream<StoreSettings> settingsStream() => settingsRef.snapshots().map((s) {
+      final st = StoreSettings.fromMap(s.data());
+      Brand.name = st.storeName;
+      Brand.slogan = st.slogan;
+      Brand.logo = st.logo;
+      return st;
+    });
+
+// ======================== طرق الدفع وحالة الفاتورة ========================
+
+const Map<String, String> kPayMethods = {
+  'cash': 'كاش',
+  'visa': 'فيزا',
+  'wallet': 'محفظة',
+  'transfer': 'تحويل',
+};
+String payMethodLabel(dynamic m) => kPayMethods[(m ?? 'cash').toString()] ?? 'كاش';
+
+String invoiceLabel(int n) => n > 0 ? 'S-${pad4(n)}' : '—';
+String purchaseLabel(int n) => 'P-${pad4(n)}';
+String voucherLabel(String type, int n) => '${type == 'in' ? 'R' : 'V'}-${pad4(n)}';
 
 // ======================== حساب العميل ========================
 
@@ -204,9 +348,50 @@ class Entry {
   List<Map<String, dynamic>> get allocations =>
       ((m['allocations'] as List?) ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
   int get invoiceNo => toI(m['invoiceNo']);
+  double get discount => toD(m['discount']);
+  double get extra => toD(m['extra']);
+  String get payMethod => (m['payMethod'] ?? 'cash').toString();
+  String get rep => (m['rep'] ?? '').toString();
+  String get by => (m['by'] ?? '').toString();
+  double get gross => round2(items.fold(0.0, (a, it) => a + toD(it['qty']) * toD(it['price'])) + extra);
 
-  /// المبلغ اللي اتحصّل فعلاً (من غير الخصومات والنقط)
-  double get collected => (kind == 'adjust' || kind == 'redeem') ? 0 : credit;
+  /// الباقي على الفاتورة دي بالذات
+  double get remaining {
+    if (kind != 'sale') return 0;
+    var r = 0.0;
+    for (final it in items) {
+      r += toD(it['qty']) * toD(it['price']) - toD(it['paid']);
+    }
+    final ex = extra - toD(m['extraPaid']);
+    if (ex > 0) r += ex;
+    r = round2(r);
+    return r < 0 ? 0 : r;
+  }
+
+  double get returnedQty => items.fold(0.0, (a, it) => a + toD(it['returned']));
+  double get soldQty => items.fold(0.0, (a, it) => a + toD(it['qty']));
+
+  /// مسددة / آجلة / مرتجع
+  String get status {
+    if (kind != 'sale') return '';
+    if (soldQty > 0 && returnedQty >= soldQty - 0.0001) return 'returned';
+    return remaining <= 0.004 ? 'paid' : 'deferred';
+  }
+
+  /// المبلغ اللي اتحصّل فعلاً (من غير الخصومات والنقط والمرتجعات)
+  double get collected => (kind == 'adjust' || kind == 'redeem' || kind == 'return') ? 0 : credit;
+}
+
+Widget invoiceStatusPill(String s) {
+  switch (s) {
+    case 'paid':
+      return Pill('مسددة', kPaid);
+    case 'deferred':
+      return Pill('آجلة', kWarn);
+    case 'returned':
+      return Pill('مرتجع', kMuted);
+  }
+  return Pill(s, kMuted);
 }
 
 class Account {
@@ -218,6 +403,7 @@ class Account {
   double get credit => entries.fold(0.0, (a, e) => a + e.credit);
   double get paid => entries.fold(0.0, (a, e) => a + e.collected);
   double get discounts => credit - paid;
+  double get returns => entries.where((e) => e.kind == 'return').fold(0.0, (a, e) => a + e.credit);
   double get balance => round2(debit - credit);
 
   int get pointsEarned {
@@ -416,13 +602,13 @@ Future<String?> pickImageB64(BuildContext context, {double maxWidth = 700}) asyn
     builder: (c) => SafeArea(
       child: Wrap(children: [
         ListTile(
-          leading: const Icon(Icons.camera_alt_outlined),
-          title: const Text('صوّر بالكاميرا'),
+          leading: Icon(Icons.camera_alt_outlined),
+          title: Text('صوّر بالكاميرا'),
           onTap: () => Navigator.pop(c, ImageSource.camera),
         ),
         ListTile(
-          leading: const Icon(Icons.photo_library_outlined),
-          title: const Text('اختار من المعرض'),
+          leading: Icon(Icons.photo_library_outlined),
+          title: Text('اختار من المعرض'),
           onTap: () => Navigator.pop(c, ImageSource.gallery),
         ),
       ]),
@@ -470,7 +656,7 @@ void showPhoto(BuildContext context, String b64) {
   showDialog(
     context: context,
     builder: (c) => Dialog(
-      insetPadding: const EdgeInsets.all(12),
+      insetPadding: EdgeInsets.all(12),
       backgroundColor: Colors.black,
       child: InkWell(
         onTap: () => Navigator.pop(c),
@@ -496,7 +682,7 @@ Future<bool> confirm(BuildContext context, String title, String body,
       title: Text(title),
       content: Text(body),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('إلغاء')),
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text('إلغاء')),
         FilledButton(
           style: danger ? FilledButton.styleFrom(backgroundColor: kOwe) : null,
           onPressed: () => Navigator.pop(c, true),
@@ -517,16 +703,16 @@ class EmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 52, color: kRose),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           if (text.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: kMuted)),
+            SizedBox(height: 4),
+            Text(text, textAlign: TextAlign.center, style: TextStyle(color: kMuted)),
           ],
         ]),
       ),
@@ -537,36 +723,37 @@ class EmptyView extends StatelessWidget {
 class Loading extends StatelessWidget {
   const Loading({super.key});
   @override
-  Widget build(BuildContext context) => const Center(child: CircularProgressIndicator());
+  Widget build(BuildContext context) => Center(child: CircularProgressIndicator());
 }
 
 class StatBox extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
+  final Color? color;
   final IconData icon;
   final VoidCallback? onTap;
   const StatBox(this.label, this.value,
-      {super.key, this.color = kPlum, this.icon = Icons.info_outline, this.onTap});
+      {super.key, this.color, this.icon = Icons.info_outline, this.onTap});
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? kInk;
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Expanded(
                   child: Text(label,
-                      style: const TextStyle(fontSize: 12, color: kMuted),
+                      style: TextStyle(fontSize: 12, color: kMuted),
                       overflow: TextOverflow.ellipsis)),
             ]),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: AlignmentDirectional.centerStart,
@@ -587,11 +774,11 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 6),
       child: Row(children: [
         Expanded(
             child: Text(text,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kPlum))),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kInk))),
         if (trailing != null) trailing!,
       ]),
     );
@@ -605,7 +792,7 @@ class Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration:
           BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
       child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -616,13 +803,13 @@ class Pill extends StatelessWidget {
 Widget orderStatusPill(String s) {
   switch (s) {
     case 'new':
-      return const Pill('جديد', Colors.blue);
+      return Pill('جديد', kInfo);
     case 'ready':
-      return const Pill('جاهز للاستلام', Colors.orange);
+      return Pill('جاهز للاستلام', kWarn);
     case 'delivered':
-      return const Pill('اتسلّم واتسجل', kPaid);
+      return Pill('اتسلّم واتسجل', kPaid);
     case 'cancelled':
-      return const Pill('ملغي', Colors.grey);
+      return Pill('ملغي', Colors.grey);
   }
   return Pill(s, Colors.grey);
 }
@@ -633,7 +820,7 @@ TextField numField(TextEditingController c, String label,
     TextField(
       controller: c,
       autofocus: autofocus,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(labelText: label),
       onChanged: onChanged,
     );

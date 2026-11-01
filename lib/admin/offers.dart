@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core.dart';
 import 'live.dart';
+import 'shell.dart';
 
 class OffersAdmin extends StatelessWidget {
   const OffersAdmin({super.key});
@@ -14,18 +15,19 @@ class OffersAdmin extends StatelessWidget {
       builder: (context, _) {
         final list = Live.I.offers;
         return Scaffold(
-          appBar: AppBar(title: const Text('العروض')),
+          appBar: pageAppBar(context, 'العروض'),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferForm())),
-            icon: const Icon(Icons.add),
-            label: const Text('عرض جديد'),
+            heroTag: null,
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OfferForm())),
+            icon: Icon(Icons.add),
+            label: Text('عرض جديد'),
           ),
           body: list.isEmpty
-              ? const EmptyView('مفيش عروض',
+              ? EmptyView('مفيش عروض',
                   text: 'العرض اللي تنزّله بيظهر للعملاء أول ما يفتحوا التطبيق، ويقدروا يطلبوه على طول.',
                   icon: Icons.local_offer_outlined)
               : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 90),
+                  padding: EdgeInsets.only(bottom: 90),
                   itemCount: list.length,
                   itemBuilder: (_, i) {
                     final o = list[i];
@@ -38,19 +40,19 @@ class OffersAdmin extends StatelessWidget {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => OfferForm(o: o))),
                         child: Row(children: [
                           B64Image(m['image']?.toString(), width: 90, height: 90, placeholder: Icons.local_offer_outlined),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text((m['title'] ?? '').toString(),
-                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
                               Text('${money(m['price'])}${toD(m['oldPrice']) > 0 ? ' بدل ${money(m['oldPrice'])}' : ''}'),
                               Text('نزل ${fmtDate(m['createdAt'])}${m['until'] != null ? ' · لحد ${fmtDate(m['until'])}' : ''}',
-                                  style: const TextStyle(fontSize: 12, color: kMuted)),
+                                  style: TextStyle(fontSize: 12, color: kMuted)),
                             ]),
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: active ? const Pill('شغال', kPaid) : const Pill('متوقف', Colors.grey),
+                            padding: EdgeInsets.all(8),
+                            child: active ? Pill('شغال', kPaid) : Pill('متوقف', Colors.grey),
                           ),
                         ]),
                       ),
@@ -93,7 +95,7 @@ class _OfferFormState extends State<OfferForm> {
     final prods = Live.I.products;
     return Scaffold(
       appBar: AppBar(title: Text(widget.o == null ? 'عرض جديد' : 'تعديل عرض')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: EdgeInsets.all(16), children: [
         InkWell(
           onTap: () async {
             final b = await pickImageB64(context, maxWidth: 900);
@@ -107,7 +109,7 @@ class _OfferFormState extends State<OfferForm> {
                   ? Container(
                       color: kBlush,
                       alignment: Alignment.center,
-                      child: const Column(mainAxisSize: MainAxisSize.min, children: [
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.add_photo_alternate_outlined, size: 40, color: kRose),
                         Text('صورة العرض (الإعلان)'),
                       ]),
@@ -116,17 +118,17 @@ class _OfferFormState extends State<OfferForm> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        TextField(controller: title, decoration: const InputDecoration(labelText: 'عنوان العرض')),
-        const SizedBox(height: 12),
-        TextField(controller: body, maxLines: 3, decoration: const InputDecoration(labelText: 'تفاصيل العرض')),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
+        TextField(controller: title, decoration: InputDecoration(labelText: 'عنوان العرض')),
+        SizedBox(height: 12),
+        TextField(controller: body, maxLines: 3, decoration: InputDecoration(labelText: 'تفاصيل العرض')),
+        SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: prods.any((p) => p.id == productId) ? productId : '',
           isExpanded: true,
-          decoration: const InputDecoration(labelText: 'المنتج (عشان يتخصم من المخزن)'),
+          decoration: InputDecoration(labelText: 'المنتج (عشان يتخصم من المخزن)'),
           items: [
-            const DropdownMenuItem(value: '', child: Text('من غير منتج محدد')),
+            DropdownMenuItem(value: '', child: Text('من غير منتج محدد')),
             ...prods.map((p) => DropdownMenuItem(value: p.id, child: Text((p.data()['name'] ?? '').toString()))),
           ],
           onChanged: (v) => setState(() {
@@ -139,28 +141,28 @@ class _OfferFormState extends State<OfferForm> {
             }
           }),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(children: [
           Expanded(child: numField(price, 'سعر العرض')),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(child: numField(oldPrice, 'السعر قبل العرض (اختياري)')),
         ]),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.event),
+          leading: Icon(Icons.event),
           title: Text(until == null ? 'من غير ميعاد انتهاء' : 'لحد ${fmtDate(until)}'),
           trailing: Wrap(children: [
-            if (until != null) TextButton(onPressed: () => setState(() => until = null), child: const Text('شيل')),
+            if (until != null) TextButton(onPressed: () => setState(() => until = null), child: Text('شيل')),
             TextButton(
               onPressed: () async {
                 final d = await showDatePicker(
                     context: context,
-                    initialDate: until ?? DateTime.now().add(const Duration(days: 1)),
-                    firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                    initialDate: until ?? DateTime.now().add(Duration(days: 1)),
+                    firstDate: DateTime.now().subtract(Duration(days: 1)),
                     lastDate: DateTime(2100));
                 if (d != null) setState(() => until = DateTime(d.year, d.month, d.day, 23, 59));
               },
-              child: const Text('حدّد'),
+              child: Text('حدّد'),
             ),
           ]),
         ),
@@ -168,9 +170,9 @@ class _OfferFormState extends State<OfferForm> {
           contentPadding: EdgeInsets.zero,
           value: active,
           onChanged: (v) => setState(() => active = v),
-          title: const Text('العرض شغال ويظهر للعملاء'),
+          title: Text('العرض شغال ويظهر للعملاء'),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         FilledButton(
           onPressed: busy
               ? null
@@ -203,7 +205,7 @@ class _OfferFormState extends State<OfferForm> {
                     if (mounted) setState(() => busy = false);
                   }
                 },
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
           child: Text(widget.o == null ? 'نزّل العرض' : 'حفظ'),
         ),
         if (widget.o != null)
@@ -216,8 +218,8 @@ class _OfferFormState extends State<OfferForm> {
                 nav.pop();
               }
             },
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('حذف العرض'),
+            icon: Icon(Icons.delete_outline),
+            label: Text('حذف العرض'),
           ),
       ]),
     );

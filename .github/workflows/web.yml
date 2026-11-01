@@ -1,0 +1,46 @@
+name: Deploy Kolak Gamila Web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+
+      - name: Generate web project
+        run: |
+          flutter create --org com.kolak --project-name gamila --platforms web .
+          rm -rf test
+          pip install pillow >/dev/null
+          python3 tool/patch_web.py
+
+      - name: Download fonts
+        run: bash tool/fonts.sh
+
+      - name: Build web
+        run: |
+          flutter pub get
+          flutter build web --release --base-href /kolak-gamila/ --no-web-resources-cdn
+          cp build/web/index.html build/web/404.html
+          touch build/web/.nojekyll
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          publish_branch: gh-pages
+          force_orphan: true

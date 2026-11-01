@@ -31,12 +31,8 @@ jobs:
           rm -rf test
           python3 tool/patch_android.py
 
-      - name: Download Arabic font for PDF
-        run: |
-          mkdir -p assets/fonts
-          for w in Regular Bold; do
-            curl -fsSL -o assets/fonts/Amiri-$w.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-$w.ttf"
-          done
+      - name: Download fonts
+        run: bash tool/fonts.sh
 
       - name: Get packages
         run: flutter pub get

@@ -19,9 +19,14 @@ class Live extends ChangeNotifier {
   List<Doc> offers = [];
   List<Doc> users = [];
   Map<String, double> costs = {};
+  List<Doc> suppliers = [];
+  List<Doc> purchases = [];
+  List<Doc> vouchers = [];
+  List<Doc> expenses = [];
+  List<Doc> damaged = [];
 
   double costOf(String productId) => costs[productId] ?? 0;
-  StoreSettings settings = const StoreSettings();
+  StoreSettings settings = StoreSettings();
   bool ready = false;
   String error = '';
   final _subs = <StreamSubscription>[];
@@ -76,6 +81,26 @@ class Live extends ChangeNotifier {
         notifyListeners();
       }, onError: _err));
     }
+    void sub(String name, void Function(List<Doc>) set, {String order = 'date'}) {
+      _subs.add(db.collection(name).snapshots().listen((s) {
+        final docs = s.docs
+          ..sort((a, b) => (tsToDate(b.data()[order]) ?? DateTime(2100))
+              .compareTo(tsToDate(a.data()[order]) ?? DateTime(2100)));
+        set(docs);
+        notifyListeners();
+      }, onError: (_) {}));
+    }
+
+    if (Me.can('purchases')) {
+      _subs.add(db.collection('suppliers').snapshots().listen((s) {
+        suppliers = s.docs..sort((a, b) => toI(a.data()['code']).compareTo(toI(b.data()['code'])));
+        notifyListeners();
+      }, onError: (_) {}));
+      sub('purchases', (d) => purchases = d);
+      sub('vouchers', (d) => vouchers = d);
+    }
+    if (Me.can('expenses') || Me.can('reports')) sub('expenses', (d) => expenses = d);
+    sub('damaged', (d) => damaged = d);
     _subs.add(settingsStream().listen((s) {
       settings = s;
       notifyListeners();
@@ -92,6 +117,11 @@ class Live extends ChangeNotifier {
     _subs.clear();
     users = [];
     costs = {};
+    suppliers = [];
+    purchases = [];
+    vouchers = [];
+    expenses = [];
+    damaged = [];
     _loaded.clear();
     ready = false;
   }
@@ -145,6 +175,43 @@ class Live extends ChangeNotifier {
     }
     return null;
   }
+
+  /// كل فواتير البيع (الأحدث الأول)
+  List<Entry> get sales {
+    final l = entries.where((e) => e.kind == 'sale' && e.debit > 0).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return l;
+  }
+
+  Doc? supplier(String id) {
+    for (final c in suppliers) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  /// اللي عليك للمورد
+  double supplierBalance(String id) {
+    var b = 0.0;
+    for (final p in purchases) {
+      if (p.data()['supplierId'] == id) b += toD(p.data()['total']) - toD(p.data()['paid']);
+    }
+    for (final v in vouchers) {
+      if (v.data()['partyType'] == 'supplier' && v.data()['partyId'] == id) b -= toD(v.data()['amount']);
+    }
+    return round2(b);
+  }
+
+  List<Doc> get lowStock => products.where((p) {
+        final m = p.data();
+        return m['stock'] != null && toD(m['stock']) <= toD(m['minStock'] ?? 2);
+      }).toList();
+
+  String customerName(String id) => (customer(id)?.data()['name'] ?? (id == 'cash' ? 'نقدي' : '—')).toString();
+
+  /// أسماء الموظفين (للمندوب)
+  List<String> get staffNames =>
+      staff.map((u) => (u.data()['name'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
 
   int get newOrders => orders.where((o) => o.data()['status'] == 'new').length;
 }

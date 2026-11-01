@@ -6,6 +6,7 @@ import '../ops.dart';
 import '../pdf.dart';
 import 'accounts.dart';
 import 'live.dart';
+import 'shell.dart';
 import 'payment_screen.dart';
 import 'sale_screen.dart';
 
@@ -14,18 +15,19 @@ class CodeBadge extends StatelessWidget {
   const CodeBadge(this.code, {super.key});
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: kBlush, borderRadius: BorderRadius.circular(8)),
         child: Text('#${pad4(code)}',
             textDirection: TextDirection.ltr,
-            style: const TextStyle(color: kPlum, fontWeight: FontWeight.bold, fontSize: 12)),
+            style: TextStyle(color: kInk, fontWeight: FontWeight.bold, fontSize: 12)),
       );
 }
 
 // ======================== قايمة العملاء ========================
 
 class CustomersScreen extends StatefulWidget {
-  const CustomersScreen({super.key});
+  final bool bare; // جوه تبويب (من غير شريط عنوان)
+  const CustomersScreen({super.key, this.bare = false});
   @override
   State<CustomersScreen> createState() => _CustomersScreenState();
 }
@@ -41,7 +43,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       builder: (context, _) {
         final live = Live.I;
         final query = q.trim().toLowerCase().replaceAll('#', '');
-        var rows = live.customers.map((c) => MapEntry(c, live.accountOf(c.id))).toList();
+        var rows = live.customers.where((c) => c.id != 'cash').map((c) => MapEntry(c, live.accountOf(c.id))).toList();
         if (query.isNotEmpty) {
           rows = rows.where((r) {
             final m = r.key.data();
@@ -67,31 +69,32 @@ class _CustomersScreenState extends State<CustomersScreen> {
         });
         final total = rows.fold(0.0, (s, r) => s + (r.value.balance > 0 ? r.value.balance : 0));
         return Scaffold(
-          appBar: AppBar(title: const Text('العملاء')),
+          appBar: widget.bare ? null : pageAppBar(context, 'العملاء'),
           floatingActionButton: !Me.can('customers')
               ? null
               : FloatingActionButton.extended(
+            heroTag: null,
             onPressed: () => openCustomerForm(context),
-            icon: const Icon(Icons.person_add_alt),
-            label: const Text('عميل جديد'),
+            icon: Icon(Icons.person_add_alt),
+            label: Text('عميل جديد'),
           ),
           body: Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              padding: EdgeInsets.fromLTRB(12, 12, 12, 4),
               child: Row(children: [
                 Expanded(
                   child: TextField(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                         hintText: 'ابحث بالاسم أو الكود أو الرقم', prefixIcon: Icon(Icons.search)),
                     onChanged: (v) => setState(() => q = v),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
+                  icon: Icon(Icons.sort),
                   initialValue: sort,
                   onSelected: (v) => setState(() => sort = v),
-                  itemBuilder: (_) => const [
+                  itemBuilder: (_) => [
                     PopupMenuItem(value: 'bal', child: Text('الأعلى مديونية')),
                     PopupMenuItem(value: 'code', child: Text('بالكود')),
                     PopupMenuItem(value: 'name', child: Text('بالاسم')),
@@ -101,23 +104,23 @@ class _CustomersScreenState extends State<CustomersScreen> {
               ]),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(children: [
-                Text('${rows.length} عميل', style: const TextStyle(color: kMuted)),
+                Text('${rows.length} عميل', style: TextStyle(color: kMuted)),
                 const Spacer(),
                 if (Me.can('reports'))
                   Text('عليهم ${money(total)}',
-                    style: const TextStyle(color: kOwe, fontWeight: FontWeight.bold)),
+                    style: TextStyle(color: kOwe, fontWeight: FontWeight.bold)),
               ]),
             ),
             Expanded(
               child: live.customers.isEmpty
-                  ? const EmptyView('مفيش عملاء لسه',
+                  ? EmptyView('مفيش عملاء لسه',
                       text: 'دوس «عميل جديد» وهياخد كود ثابت تلقائي.', icon: Icons.people_outline)
                   : rows.isEmpty
-                      ? const EmptyView('مفيش نتيجة', text: 'جرّب اسم تاني أو رقم الكود.')
+                      ? EmptyView('مفيش نتيجة', text: 'جرّب اسم تاني أو رقم الكود.')
                       : ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 90),
+                          padding: EdgeInsets.only(bottom: 90),
                           itemCount: rows.length,
                           itemBuilder: (c, i) => _row(context, rows[i].key, rows[i].value),
                         ),
@@ -139,10 +142,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
           Flexible(
               child: Text((m['name'] ?? '').toString(),
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600))),
+                  style: TextStyle(fontWeight: FontWeight.w600))),
           if (hasApp) ...[
-            const SizedBox(width: 4),
-            const Icon(Icons.phone_android, size: 15, color: kPaid),
+            SizedBox(width: 4),
+            Icon(Icons.phone_android, size: 15, color: kPaid),
           ],
         ]),
         subtitle: Text(
@@ -150,7 +153,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
             if ((m['phone'] ?? '').toString().isNotEmpty) m['phone'],
             if (a.entries.isNotEmpty) 'آخر حركة ${fmtDate(a.entries.first.date)}',
           ].join(' · '),
-          style: const TextStyle(fontSize: 12),
+          style: TextStyle(fontSize: 12),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -162,7 +165,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     fontSize: 15,
                     color: b > 0.004 ? kOwe : (b < -0.004 ? kPaid : kMuted))),
             Text(b > 0.004 ? 'عليه' : (b < -0.004 ? 'له رصيد' : 'خالص'),
-                style: const TextStyle(fontSize: 11, color: kMuted)),
+                style: TextStyle(fontSize: 11, color: kMuted)),
           ],
         ),
         onTap: () => Navigator.push(
@@ -268,51 +271,51 @@ class _CustomerFormState extends State<CustomerForm> {
     final isNew = widget.c == null;
     return Scaffold(
       appBar: AppBar(title: Text(isNew ? 'عميل جديد' : 'تعديل بيانات العميل')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: EdgeInsets.all(16), children: [
         TextField(
           controller: code,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
               labelText: 'الكود الثابت', prefixText: '# ', helperText: 'تقدر تغيّره، بس ميتكررش'),
         ),
-        const SizedBox(height: 12),
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'الاسم')),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
+        TextField(controller: name, decoration: InputDecoration(labelText: 'الاسم')),
+        SizedBox(height: 12),
         TextField(
           controller: phone,
           keyboardType: TextInputType.phone,
           textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
               labelText: 'رقم الموبايل / الواتساب',
               hintText: '01xxxxxxxxx',
               helperText: 'لو سجّل في التطبيق بنفس الرقم هيشوف حسابه على طول'),
         ),
-        const SizedBox(height: 12),
-        TextField(controller: address, decoration: const InputDecoration(labelText: 'العنوان (اختياري)')),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
+        TextField(controller: address, decoration: InputDecoration(labelText: 'العنوان (اختياري)')),
+        SizedBox(height: 12),
         TextField(
           controller: notes,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'ملاحظات عن العميل'),
+          decoration: InputDecoration(labelText: 'ملاحظات عن العميل'),
         ),
         if (isNew) ...[
-          const SizedBox(height: 20),
-          const Text('مديونية قديمة (اختياري)', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          SizedBox(height: 20),
+          Text('مديونية قديمة (اختياري)', style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
           numField(opening, 'المبلغ اللي عليه من قبل كده'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
               controller: openingNote,
-              decoration: const InputDecoration(labelText: 'المبلغ ده بتاع إيه؟')),
+              decoration: InputDecoration(labelText: 'المبلغ ده بتاع إيه؟')),
         ],
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         FilledButton(
           onPressed: busy ? null : _save,
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-          child: const Text('حفظ'),
+          style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+          child: Text('حفظ'),
         ),
         if (!isNew && Me.can('edit')) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextButton.icon(
             style: TextButton.styleFrom(foregroundColor: kOwe),
             onPressed: busy
@@ -330,8 +333,8 @@ class _CustomerFormState extends State<CustomerForm> {
                     await db.collection('customers').doc(widget.c!.id).delete();
                     nav.popUntil((r) => r.isFirst);
                   },
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('حذف العميل وكل حركاته'),
+            icon: Icon(Icons.delete_outline),
+            label: Text('حذف العميل وكل حركاته'),
           ),
         ],
       ]),
@@ -355,7 +358,7 @@ class CustomerDetail extends StatelessWidget {
         if (c == null) {
           return Scaffold(
               appBar: AppBar(),
-              body: const EmptyView('العميل ده مش موجود', text: 'ممكن يكون اتحذف.'));
+              body: EmptyView('العميل ده مش موجود', text: 'ممكن يكون اتحذف.'));
         }
         final m = c.data();
         final phone = (m['phone'] ?? '').toString();
@@ -368,62 +371,62 @@ class CustomerDetail extends StatelessWidget {
               if (Me.can('customers'))
               IconButton(
                 tooltip: 'تعديل البيانات والكود',
-                icon: const Icon(Icons.edit_outlined),
+                icon: Icon(Icons.edit_outlined),
                 onPressed: () => openCustomerForm(context, c: c),
               ),
             ],
           ),
-          body: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
+          body: ListView(padding: EdgeInsets.only(bottom: 32), children: [
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     CodeBadge(m['code']),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     if (phone.isNotEmpty)
-                      Text(phone, textDirection: TextDirection.ltr, style: const TextStyle(color: kMuted)),
+                      Text(phone, textDirection: TextDirection.ltr, style: TextStyle(color: kMuted)),
                     const Spacer(),
                     if (appUser != null)
-                      const Pill('عنده التطبيق', kPaid)
+                      Pill('عنده التطبيق', kPaid)
                     else if (phone.isNotEmpty && Me.owner)
                       TextButton(
                         onPressed: () => openNewAccount(context, phone: phone, name: (m['name'] ?? '').toString()),
-                        child: const Text('اعمله حساب'),
+                        child: Text('اعمله حساب'),
                       ),
                   ]),
                   if ((m['address'] ?? '').toString().isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(m['address'].toString(), style: const TextStyle(color: kMuted)),
+                    SizedBox(height: 4),
+                    Text(m['address'].toString(), style: TextStyle(color: kMuted)),
                   ],
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(children: [
                     _box('إجمالي المسحوب', acc.debit, kOwe),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _box('إجمالي المدفوع', acc.paid, kPaid),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _box(acc.balance >= 0 ? 'الباقي عليه' : 'له رصيد', acc.balance.abs(),
                         acc.balance > 0.004 ? kOwe : kPaid),
                   ]),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(children: [
-                    const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
-                    const SizedBox(width: 4),
-                    Text('${acc.points} نقطة', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                    SizedBox(width: 4),
+                    Text('${acc.points} نقطة', style: TextStyle(fontWeight: FontWeight.bold)),
                     if (acc.discounts > 0.004) ...[
-                      const SizedBox(width: 12),
-                      Text('خصومات: ${money(acc.discounts)}', style: const TextStyle(color: kMuted)),
+                      SizedBox(width: 12),
+                      Text('خصومات: ${money(acc.discounts)}', style: TextStyle(color: kMuted)),
                     ],
                     const Spacer(),
                     if (acc.points > 0 && Me.can('edit'))
                       TextButton(
-                          onPressed: () => _redeem(context, c, acc), child: const Text('استبدال نقط')),
+                          onPressed: () => _redeem(context, c, acc), child: Text('استبدال نقط')),
                   ]),
                   if ((m['notes'] ?? '').toString().isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(color: kBlush, borderRadius: BorderRadius.circular(10)),
                       child: Text(m['notes'].toString()),
                     ),
@@ -432,46 +435,46 @@ class CustomerDetail extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Wrap(spacing: 8, runSpacing: 8, children: [
                 if (Me.can('sell'))
                 FilledButton.icon(
                   onPressed: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => SaleScreen(customerId: customerId))),
-                  icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('بيع / مديونية'),
+                  icon: Icon(Icons.add_shopping_cart),
+                  label: Text('بيع / مديونية'),
                 ),
                 if (Me.can('sell'))
                 FilledButton.tonalIcon(
                   onPressed: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => PaymentScreen(customerId: customerId))),
-                  icon: const Icon(Icons.payments_outlined),
-                  label: const Text('تسجيل دفعة'),
+                  icon: Icon(Icons.payments_outlined),
+                  label: Text('تسجيل دفعة'),
                 ),
                 if (Me.can('edit'))
                 OutlinedButton.icon(
                   onPressed: () => adjustSheet(context, c, acc),
-                  icon: const Icon(Icons.tune),
-                  label: const Text('تعديل الحساب'),
+                  icon: Icon(Icons.tune),
+                  label: Text('تعديل الحساب'),
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(foregroundColor: kPaid),
                   onPressed: phone.isEmpty
                       ? () => toast(context, 'ضيف رقم واتساب للعميل الأول', error: true)
                       : () => _whatsapp(context, c, acc),
-                  icon: const Icon(Icons.chat_outlined),
-                  label: const Text('رسالة واتساب'),
+                  icon: Icon(Icons.chat_outlined),
+                  label: Text('رسالة واتساب'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => shareStatementPdf(context, c.data(), acc),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('كشف حساب PDF'),
+                  icon: Icon(Icons.picture_as_pdf_outlined),
+                  label: Text('كشف حساب PDF'),
                 ),
               ]),
             ),
             SectionTitle('سجل الحركات (${acc.entries.length})'),
             if (acc.entries.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(24),
                 child: Text('مفيش حركات لسه. سجّل اللي اشتراه من «بيع / مديونية».',
                     textAlign: TextAlign.center, style: TextStyle(color: kMuted)),
@@ -485,10 +488,10 @@ class CustomerDetail extends StatelessWidget {
 
   Widget _box(String label, double v, Color color) => Expanded(
         child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xFFF6EFF1), borderRadius: BorderRadius.circular(10)),
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(color: Color(0xFFF6EFF1), borderRadius: BorderRadius.circular(10)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: kMuted)),
+            Text(label, style: TextStyle(fontSize: 11, color: kMuted)),
             FittedBox(
               child: Text(num2(v),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: color)),
@@ -507,14 +510,14 @@ class CustomerDetail extends StatelessWidget {
           ? ''
           : '\nآخر سحب: ${money(lastSale.first.debit)} بتاريخ ${fmtDate(lastSale.first.date)}';
       msg = 'أهلاً $name 🌸\n'
-          'ده كشف حسابك عند «$kStoreName» (كود #${pad4(m['code'])}):\n'
+          'ده كشف حسابك عند «$Brand.name» (كود #${pad4(m['code'])}):\n'
           'إجمالي المسحوب: ${money(acc.debit)}\n'
           'إجمالي المدفوع: ${money(acc.paid)}\n'
           '${acc.discounts > 0.004 ? 'خصومات: ${money(acc.discounts)}\n' : ''}'
           'المتبقي عليك: ${money(acc.balance)}$last\n\n'
           'برجاء تسديد المبلغ في أقرب وقت. شكراً لتعاملك معانا 💐';
     } else {
-      msg = 'أهلاً $name 🌸\nحسابك عند «$kStoreName» خالص، مفيش عليك أي مبالغ. شكراً لتعاملك معانا 💐';
+      msg = 'أهلاً $name 🌸\nحسابك عند «$Brand.name» خالص، مفيش عليك أي مبالغ. شكراً لتعاملك معانا 💐';
     }
     final ctl = TextEditingController(text: msg);
     final send = await showModalBottomSheet<bool>(
@@ -523,15 +526,15 @@ class CustomerDetail extends StatelessWidget {
       builder: (c2) => Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c2).viewInsets.bottom + 16),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('رسالة واتساب (تقدر تعدّلها)', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
+          Text('رسالة واتساب (تقدر تعدّلها)', style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
           TextField(controller: ctl, maxLines: 10, minLines: 6),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: kPaid),
             onPressed: () => Navigator.pop(c2, true),
-            icon: const Icon(Icons.send),
-            label: const Text('افتح واتساب'),
+            icon: Icon(Icons.send),
+            label: Text('افتح واتساب'),
           ),
         ]),
       ),
@@ -545,20 +548,20 @@ class CustomerDetail extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('استبدال نقط'),
+        title: Text('استبدال نقط'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('عنده ${acc.points} نقطة'),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           TextField(
               controller: pts,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'عدد النقط')),
-          const SizedBox(height: 10),
+              decoration: InputDecoration(labelText: 'عدد النقط')),
+          SizedBox(height: 10),
           numField(val, 'قيمة الخصم بالجنيه (لو فيه)'),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('استبدال')),
+          TextButton(onPressed: () => Navigator.pop(d, false), child: Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(d, true), child: Text('استبدال')),
         ],
       ),
     );
@@ -596,32 +599,32 @@ Future<void> adjustSheet(BuildContext context, Doc c, Account acc, {Entry? old})
         padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(sc).viewInsets.bottom + 16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text('تعديل حساب ${c.data()['name']}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          Text('عليه دلوقتي: ${money(cur)}', style: const TextStyle(color: kMuted)),
-          const SizedBox(height: 12),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          Text('عليه دلوقتي: ${money(cur)}', style: TextStyle(color: kMuted)),
+          SizedBox(height: 12),
           SegmentedButton<String>(
             segments: [
-              const ButtonSegment(value: 'add', label: Text('زوّد عليه')),
-              const ButtonSegment(value: 'sub', label: Text('اخصم من عليه')),
-              if (old == null) const ButtonSegment(value: 'set', label: Text('حدّد اللي عليه')),
+              ButtonSegment(value: 'add', label: Text('زوّد عليه')),
+              ButtonSegment(value: 'sub', label: Text('اخصم من عليه')),
+              if (old == null) ButtonSegment(value: 'set', label: Text('حدّد اللي عليه')),
             ],
             selected: {mode},
             onSelectionChanged: (s) => setS(() => mode = s.first),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           numField(amount,
               mode == 'add' ? 'المبلغ اللي هيتزوّد' : (mode == 'sub' ? 'المبلغ اللي هيتخصم' : 'المفروض يبقى عليه كام؟'),
               onChanged: (_) => setS(() {})),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
               controller: note,
-              decoration: const InputDecoration(labelText: 'السبب', hintText: 'خصم، مرتجع، تصحيح غلطة…')),
-          const SizedBox(height: 12),
+              decoration: InputDecoration(labelText: 'السبب', hintText: 'خصم، مرتجع، تصحيح غلطة…')),
+          SizedBox(height: 12),
           Text('التغيير: ${d > 0 ? '+' : ''}${num2(d)}   ←   هيبقى عليه ${money(cur + d)}',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          const Text('الخصم والتعديل مش بيتحسبوا فلوس اتحصّلت.',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('الخصم والتعديل مش بيتحسبوا فلوس اتحصّلت.',
               style: TextStyle(color: kMuted, fontSize: 12)),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FilledButton(
             onPressed: () async {
               if (d.abs() < 0.005) { toast(sc, 'مفيش تغيير في الحساب', error: true); return; }
@@ -635,7 +638,7 @@ Future<void> adjustSheet(BuildContext context, Doc c, Account acc, {Entry? old})
                   old: old);
               nav.pop();
             },
-            child: const Text('حفظ'),
+            child: Text('حفظ'),
           ),
         ]),
       );
@@ -677,17 +680,17 @@ class EntryCard extends StatelessWidget {
     }
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Pill(label, color),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
                 child: Text(fmtDate(e.date, time: true),
-                    style: const TextStyle(fontSize: 12, color: kMuted))),
+                    style: TextStyle(fontSize: 12, color: kMuted))),
             if (e.debit > 0)
-              Text('+${num2(e.debit)}', style: const TextStyle(color: kOwe, fontWeight: FontWeight.bold)),
-            if (e.debit > 0 && e.credit > 0) const SizedBox(width: 8),
+              Text('+${num2(e.debit)}', style: TextStyle(color: kOwe, fontWeight: FontWeight.bold)),
+            if (e.debit > 0 && e.credit > 0) SizedBox(width: 8),
             if (e.credit > 0)
               Text('−${num2(e.credit)}',
                   style: TextStyle(
@@ -695,46 +698,46 @@ class EntryCard extends StatelessWidget {
                       fontWeight: FontWeight.bold)),
           ]),
           if (items.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ...items.map((it) {
               final total = round2(toD(it['qty']) * toD(it['price']));
               final paid = toD(it['paid']);
               final done = paid >= total - 0.004;
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+                padding: EdgeInsets.symmetric(vertical: 2),
                 child: Row(children: [
                   Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
                       size: 16, color: done ? kPaid : kRose),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Expanded(child: Text('${it['name']}  ×${num2(it['qty'])}')),
                   Text(num2(total)),
                   if (!done && paid > 0)
                     Text('  (باقي ${num2(total - paid)})',
-                        style: const TextStyle(fontSize: 12, color: kOwe)),
+                        style: TextStyle(fontSize: 12, color: kOwe)),
                 ]),
               );
             }),
           ],
           if (toD(e.m['extra']) > 0)
-            Text('مديونية يدوي: ${money(e.m['extra'])}', style: const TextStyle(color: kMuted)),
+            Text('مديونية يدوي: ${money(e.m['extra'])}', style: TextStyle(color: kMuted)),
           if (e.kind == 'sale' && e.credit > 0)
-            Text('دفع وقتها: ${money(e.credit)}', style: const TextStyle(color: kPaid)),
+            Text('دفع وقتها: ${money(e.credit)}', style: TextStyle(color: kPaid)),
           if (e.kind == 'pay' && e.allocations.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: EdgeInsets.only(top: 6),
               child: Text(
                 '${e.m['chosen'] == true ? 'دافع تمن' : 'اتحسبت على'}: ${e.allocations.map((a) => '${a['name']} (${num2(a['amount'])})').join('، ')}',
-                style: const TextStyle(fontSize: 13, color: kMuted),
+                style: TextStyle(fontSize: 13, color: kMuted),
               ),
             ),
           if (e.note.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(e.note),
           ],
           if (admin && Me.owner && (e.m['by'] ?? '').toString().isNotEmpty && e.m['by'] != 'صاحب المحل')
-            Text('سجّلها: ${e.m['by']}', style: const TextStyle(fontSize: 12, color: kMuted)),
+            Text('سجّلها: ${e.m['by']}', style: TextStyle(fontSize: 12, color: kMuted)),
           if (e.photos.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -753,8 +756,8 @@ class EntryCard extends StatelessWidget {
               if (e.kind == 'sale')
                 TextButton.icon(
                   onPressed: () => shareInvoicePdf(context, customer, e),
-                  icon: const Icon(Icons.receipt_long, size: 18),
-                  label: const Text('الفاتورة'),
+                  icon: Icon(Icons.receipt_long, size: 18),
+                  label: Text('الفاتورة'),
                 ),
               if (admin && e.kind == 'sale' && Me.can('edit'))
                 TextButton(
@@ -762,7 +765,7 @@ class EntryCard extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                           builder: (_) => SaleScreen(customerId: e.m['customerId'], old: e))),
-                  child: const Text('تعديل'),
+                  child: Text('تعديل'),
                 ),
               if (admin && e.kind == 'adjust' && Me.can('edit'))
                 TextButton(
@@ -770,7 +773,7 @@ class EntryCard extends StatelessWidget {
                     final c = Live.I.customer(e.m['customerId']);
                     if (c != null) adjustSheet(context, c, account, old: e);
                   },
-                  child: const Text('تعديل'),
+                  child: Text('تعديل'),
                 ),
               if (admin && Me.can('edit'))
                 TextButton(
@@ -788,7 +791,7 @@ class EntryCard extends StatelessWidget {
                     await deleteEntry(e, account);
                     if (context.mounted) toast(context, 'اتحذفت الحركة');
                   },
-                  child: const Text('حذف'),
+                  child: Text('حذف'),
                 ),
             ]),
         ]),

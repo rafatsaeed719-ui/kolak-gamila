@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core.dart';
 import 'accounts.dart' show showCredentials;
 import 'live.dart';
+import 'shell.dart';
 
 /// المساعدين والموظفين: صاحب المحل بس اللي يشوف الشاشة دي
 class StaffScreen extends StatelessWidget {
@@ -15,33 +16,34 @@ class StaffScreen extends StatelessWidget {
       builder: (context, _) {
         final list = Live.I.staff;
         return Scaffold(
-          appBar: AppBar(title: const Text('المساعدين والموظفين')),
+          appBar: pageAppBar(context, 'المساعدين والموظفين'),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffForm())),
-            icon: const Icon(Icons.person_add_alt),
-            label: const Text('موظف جديد'),
+            heroTag: null,
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => StaffForm())),
+            icon: Icon(Icons.person_add_alt),
+            label: Text('موظف جديد'),
           ),
           body: list.isEmpty
-              ? const EmptyView('مفيش موظفين لسه',
+              ? EmptyView('مفيش موظفين لسه',
                   text: 'ضيف مساعد برقم موبايله وكلمة سر، واختار هو يقدر يعمل إيه.',
                   icon: Icons.badge_outlined)
               : ListView(
-                  padding: const EdgeInsets.only(bottom: 90),
+                  padding: EdgeInsets.only(bottom: 90),
                   children: list.map((u) {
                     final m = u.data();
                     final perms = ((m['perms'] as List?) ?? []).map((e) => e.toString()).toList();
                     return Card(
                       child: ListTile(
-                        leading: const CircleAvatar(
-                            backgroundColor: kBlush, child: Icon(Icons.badge_outlined, color: kPlum)),
+                        leading: CircleAvatar(
+                            backgroundColor: kBlush, child: Icon(Icons.badge_outlined, color: kInk)),
                         title: Row(children: [
                           Flexible(child: Text((m['name'] ?? '').toString(), overflow: TextOverflow.ellipsis)),
-                          const SizedBox(width: 6),
-                          if (m['disabled'] == true) const Pill('موقوف', kOwe),
+                          SizedBox(width: 6),
+                          if (m['disabled'] == true) Pill('موقوف', kOwe),
                         ]),
                         subtitle: Text(
                             '${m['phone'] ?? ''}\n${perms.map((p) => kPerms[p] ?? p).join('، ')}',
-                            style: const TextStyle(fontSize: 12)),
+                            style: TextStyle(fontSize: 12)),
                         isThreeLine: true,
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => StaffForm(u: u))),
                       ),
@@ -116,11 +118,11 @@ class _StaffFormState extends State<StaffForm> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('كلمة سر جديدة'),
-        content: TextField(controller: c, decoration: const InputDecoration(labelText: 'كلمة السر')),
+        title: Text('كلمة سر جديدة'),
+        content: TextField(controller: c, decoration: InputDecoration(labelText: 'كلمة السر')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('غيّر')),
+          TextButton(onPressed: () => Navigator.pop(d, false), child: Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(d, true), child: Text('غيّر')),
         ],
       ),
     );
@@ -141,22 +143,22 @@ class _StaffFormState extends State<StaffForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(isNew ? 'موظف جديد' : 'بيانات الموظف')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'الاسم')),
-        const SizedBox(height: 12),
+      body: ListView(padding: EdgeInsets.all(16), children: [
+        TextField(controller: name, decoration: InputDecoration(labelText: 'الاسم')),
+        SizedBox(height: 12),
         TextField(
           controller: phone,
           enabled: isNew,
           keyboardType: TextInputType.phone,
           textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(labelText: 'رقم الموبايل (بيدخل بيه)'),
+          decoration: InputDecoration(labelText: 'رقم الموبايل (بيدخل بيه)'),
         ),
         if (isNew) ...[
-          const SizedBox(height: 12),
-          TextField(controller: pass, decoration: const InputDecoration(labelText: 'كلمة السر')),
+          SizedBox(height: 12),
+          TextField(controller: pass, decoration: InputDecoration(labelText: 'كلمة السر')),
         ],
-        const SizedBox(height: 20),
-        const Text('يقدر يعمل إيه؟', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kPlum)),
+        SizedBox(height: 20),
+        Text('يقدر يعمل إيه؟', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kInk)),
         ...kPerms.entries.map((p) => CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: perms.contains(p.key),
@@ -169,19 +171,19 @@ class _StaffFormState extends State<StaffForm> {
               }),
               title: Text(p.value),
             )),
-        const Text('حسابات العملاء والموظفين، أسعار الشرا، والإعدادات ليك إنت بس.',
+        Text('حسابات العملاء والموظفين، أسعار الشرا، والإعدادات ليك إنت بس.',
             style: TextStyle(color: kMuted, fontSize: 12)),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         FilledButton(
           onPressed: busy ? null : _save,
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
           child: Text(isNew ? 'اعمل الحساب' : 'حفظ'),
         ),
         if (!isNew) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           OutlinedButton.icon(
-              onPressed: _changePass, icon: const Icon(Icons.key_outlined), label: const Text('تغيير كلمة السر')),
-          const SizedBox(height: 8),
+              onPressed: _changePass, icon: Icon(Icons.key_outlined), label: Text('تغيير كلمة السر')),
+          SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () async {
               await db.collection('users').doc(widget.u!.id).update({'disabled': m['disabled'] != true});
@@ -201,8 +203,8 @@ class _StaffFormState extends State<StaffForm> {
               await deleteAccount(widget.u!.id, m);
               nav.pop();
             },
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('حذف الموظف'),
+            icon: Icon(Icons.delete_outline),
+            label: Text('حذف الموظف'),
           ),
         ],
       ]),

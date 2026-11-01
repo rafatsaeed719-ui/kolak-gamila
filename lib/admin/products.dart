@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core.dart';
 import 'live.dart';
+import 'shell.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -35,39 +36,40 @@ class _ProductsScreenState extends State<ProductsScreen> {
           }
         }
         return Scaffold(
-          appBar: AppBar(title: const Text('البضاعة والمنتجات')),
+          appBar: pageAppBar(context, 'الأصناف والمخزون'),
           floatingActionButton: !Me.can('products')
               ? null
               : FloatingActionButton.extended(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductForm())),
-                  icon: const Icon(Icons.add),
-                  label: const Text('منتج جديد'),
+                  heroTag: null,
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductForm())),
+                  icon: Icon(Icons.add),
+                  label: Text('منتج جديد'),
                 ),
           body: Column(children: [
             if (Me.can('reports'))
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
                 child: Row(children: [
                   if (Me.owner)
                     Expanded(child: StatBox('رصيد البضاعة (شرا)', money(cost), icon: Icons.inventory_2_outlined)),
-                  if (Me.owner) const SizedBox(width: 8),
+                  if (Me.owner) SizedBox(width: 8),
                   Expanded(child: StatBox('رصيد البضاعة (بيع)', money(sell), icon: Icons.sell_outlined)),
                 ]),
               ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: TextField(
-                decoration: const InputDecoration(hintText: 'ابحث بالاسم أو الكود', prefixIcon: Icon(Icons.search)),
+                decoration: InputDecoration(hintText: 'ابحث بالاسم أو الكود', prefixIcon: Icon(Icons.search)),
                 onChanged: (v) => setState(() => q = v),
               ),
             ),
             Expanded(
               child: all.isEmpty
-                  ? const EmptyView('مفيش منتجات لسه',
+                  ? EmptyView('مفيش منتجات لسه',
                       text: 'ضيف منتجاتك بالاسم والكود والسعر والصورة والكمية اللي في المحل.',
                       icon: Icons.inventory_2_outlined)
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 90),
+                      padding: EdgeInsets.only(bottom: 90),
                       itemCount: list.length,
                       itemBuilder: (_, i) => _tile(context, list[i]),
                     ),
@@ -87,7 +89,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         leading: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: B64Image(m['image']?.toString(), width: 52, height: 52)),
-        title: Text((m['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text((m['name'] ?? '').toString(), style: TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text([
           if ((m['code'] ?? '').toString().isNotEmpty) m['code'],
           'بيع ${num2(m['price'])}',
@@ -98,7 +100,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ? null
             : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(num2(stock),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: low ? kOwe : kPlum)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: low ? kOwe : kInk)),
                 Text('في المحل', style: TextStyle(fontSize: 11, color: low ? kOwe : kMuted)),
               ]),
         onTap: !Me.can('products')
@@ -149,11 +151,11 @@ class _ProductFormState extends State<ProductForm> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('بضاعة جديدة وصلت'),
+        title: Text('بضاعة جديدة وصلت'),
         content: numField(c, 'الكمية اللي وصلت', autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('إضافة')),
+          TextButton(onPressed: () => Navigator.pop(d, false), child: Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(d, true), child: Text('إضافة')),
         ],
       ),
     );
@@ -204,7 +206,7 @@ class _ProductFormState extends State<ProductForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.p == null ? 'منتج جديد' : 'تعديل منتج')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: EdgeInsets.all(16), children: [
         Center(
           child: InkWell(
             onTap: () async {
@@ -214,49 +216,49 @@ class _ProductFormState extends State<ProductForm> {
             child: Stack(children: [
               ClipRRect(
                   borderRadius: BorderRadius.circular(16), child: B64Image(image, width: 140, height: 140)),
-              const PositionedDirectional(
+              PositionedDirectional(
                   bottom: 6,
                   end: 6,
-                  child: CircleAvatar(radius: 16, backgroundColor: kPlum, child: Icon(Icons.camera_alt, size: 16, color: Colors.white))),
+                  child: CircleAvatar(radius: 16, backgroundColor: kInk, child: Icon(Icons.camera_alt, size: 16, color: Colors.white))),
             ]),
           ),
         ),
         if (image != null)
-          Center(child: TextButton(onPressed: () => setState(() => image = null), child: const Text('شيل الصورة'))),
-        const SizedBox(height: 12),
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'اسم المنتج')),
-        const SizedBox(height: 12),
-        TextField(controller: code, decoration: const InputDecoration(labelText: 'الكود')),
-        const SizedBox(height: 12),
+          Center(child: TextButton(onPressed: () => setState(() => image = null), child: Text('شيل الصورة'))),
+        SizedBox(height: 12),
+        TextField(controller: name, decoration: InputDecoration(labelText: 'اسم المنتج')),
+        SizedBox(height: 12),
+        TextField(controller: code, decoration: InputDecoration(labelText: 'الكود')),
+        SizedBox(height: 12),
         Row(children: [
           Expanded(child: numField(price, 'سعر البيع')),
-          if (Me.owner) const SizedBox(width: 10),
+          if (Me.owner) SizedBox(width: 10),
           if (Me.owner) Expanded(child: numField(cost, 'سعر الشرا (ليك بس)')),
         ]),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(children: [
           Expanded(child: numField(stock, 'الكمية في المحل')),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(child: numField(minStock, 'نبّهني لما توصل')),
         ]),
         if (widget.p != null)
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
-                onPressed: _addStock, icon: const Icon(Icons.add_box_outlined), label: const Text('بضاعة جديدة وصلت')),
+                onPressed: _addStock, icon: Icon(Icons.add_box_outlined), label: Text('بضاعة جديدة وصلت')),
           ),
-        const SizedBox(height: 8),
-        TextField(controller: desc, maxLines: 2, decoration: const InputDecoration(labelText: 'وصف يظهر للعملاء (اختياري)')),
+        SizedBox(height: 8),
+        TextField(controller: desc, maxLines: 2, decoration: InputDecoration(labelText: 'وصف يظهر للعملاء (اختياري)')),
         SwitchListTile(
           value: visible,
           onChanged: (v) => setState(() => visible = v),
-          title: const Text('يظهر للعملاء في المعرض'),
+          title: Text('يظهر للعملاء في المعرض'),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         FilledButton(
           onPressed: busy ? null : _save,
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-          child: const Text('حفظ'),
+          style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+          child: Text('حفظ'),
         ),
         if (widget.p != null)
           TextButton.icon(
@@ -270,8 +272,8 @@ class _ProductFormState extends State<ProductForm> {
               await db.collection('products').doc(widget.p!.id).delete();
               nav.pop();
             },
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('حذف المنتج'),
+            icon: Icon(Icons.delete_outline),
+            label: Text('حذف المنتج'),
           ),
       ]),
     );
