@@ -9,12 +9,11 @@ service cloud.firestore {
     function can(p) { return isAdmin() || (staff() && p in me().get('perms', [])); }
     function mine(d) { return active() && d.get('phone', '') != '' && d.phone == me().phone; }
     function onlyStock() { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']); }
-    function onlyItems() { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items']); }
-
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
     match /users/{u} {
       allow read: if isAdmin() || (signedIn() && request.auth.uid == u);
       allow create: if isAdmin() || (signedIn() && request.auth.uid == u && request.resource.data.role == 'customer' && request.resource.data.phone is string && request.auth.token.email == request.resource.data.phone + '@kolak-gamila.app' && request.resource.data.get('disabled', false) == false);
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == u && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone', 'role', 'perms', 'disabled', 'password', 'createdByAdmin']));
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == u && !changed().hasAny(['phone', 'role', 'perms', 'disabled', 'password', 'createdByAdmin']));
       allow delete: if isAdmin();
     }
     match /customers/{id} {
@@ -26,7 +25,7 @@ service cloud.firestore {
     match /entries/{id} {
       allow read: if isAdmin() || staff() || mine(resource.data);
       allow create: if can('sell') || can('orders') || can('edit');
-      allow update: if can('edit') || (can('sell') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items', 'extraPaid'])) || (can('customers') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phone']));
+      allow update: if can('edit') || (can('sell') && changed().hasOnly(['items', 'extraPaid'])) || (can('customers') && changed().hasOnly(['phone']));
       allow delete: if can('edit');
     }
     match /products/{id} {
@@ -48,7 +47,7 @@ service cloud.firestore {
     match /orders/{id} {
       allow read: if isAdmin() || staff() || (active() && resource.data.uid == request.auth.uid);
       allow create: if active() && request.resource.data.uid == request.auth.uid && request.resource.data.phone == me().phone && request.resource.data.status == 'new';
-      allow update: if can('orders') || (active() && resource.data.uid == request.auth.uid && resource.data.status == 'new' && request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow update: if can('orders') || (active() && resource.data.uid == request.auth.uid && resource.data.status == 'new' && request.resource.data.status == 'cancelled' && changed().hasOnly(['status']));
       allow delete: if isAdmin();
     }
   }
