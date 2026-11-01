@@ -118,7 +118,6 @@ class _SuppliersBodyState extends State<SuppliersBody> {
         return Scaffold(
           floatingActionButton: FloatingActionButton.extended(
            heroTag: null,
-            heroTag: null,
             onPressed: () => supplierForm(context),
             icon: Icon(Icons.add_business_outlined),
             label: Text('مورد جديد'),
@@ -700,7 +699,6 @@ class _ReceiptsTab extends StatelessWidget {
         return Scaffold(
           floatingActionButton: FloatingActionButton.extended(
            heroTag: null,
-            heroTag: null,
             onPressed: () => pickCustomerThenPay(context),
             icon: Icon(Icons.add),
             label: Text('سند تحصيل'),
@@ -763,7 +761,6 @@ class _PaymentsTab extends StatelessWidget {
         return Scaffold(
           floatingActionButton: FloatingActionButton.extended(
            heroTag: null,
-            heroTag: null,
             onPressed: () => voucherForm(context),
             icon: Icon(Icons.add),
             label: Text('سند صرف'),

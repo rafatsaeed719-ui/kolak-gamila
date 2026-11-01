@@ -44,7 +44,7 @@ class ShellScope extends InheritedWidget {
 
 /// شريط العنوان لكل صفحة: زرار القايمة على الموبايل وزرار البحث
 PreferredSizeWidget pageAppBar(BuildContext context, String title,
-    {List<Widget> actions = [], PreferredSizeWidget? bottom}) {
+    {List<Widget> actions = const [], PreferredSizeWidget? bottom}) {
   final shell = ShellScope.maybeOf(context);
   final narrow = shell != null && !shell.wide;
   return AppBar(
